@@ -1,0 +1,15 @@
+{
+  "domain": "ontario_energy_board",
+  "name": "Ontario Energy Board",
+  "config_flow": true,
+  "documentation": "https://github.com/jrfernandes/ontario_energy_board",
+  "issue_tracker": "https://github.com/jrfernandes/ontario_energy_board/issues",
+  "requirements": [
+    "beautifulsoup4==4.10.0"
+  ],
+  "codeowners": [
+    "@jrfernandes"
+  ],
+  "iot_class": "cloud_polling",
+  "version": "0.1"
+}

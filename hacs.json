@@ -1,0 +1,5 @@
+{
+  "name": "Ontario Energy Board",
+  "render_readme": true,
+  "domains": ["sensor"]
+}
