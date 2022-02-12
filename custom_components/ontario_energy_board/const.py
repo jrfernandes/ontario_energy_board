@@ -8,7 +8,7 @@ RATES_URL = "https://www.oeb.ca/_html/calculator/data/BillData.xml"
 
 RATE_UNIT_OF_MEASURE = "CA$/kWh"
 
-REFRESH_CURRENT_PEAK_TIMEOUT = 300
+REFRESH_RATES_IN_MINUTES = 60 * 24
 
 STATE_MID_PEAK = "mid_peak"
 STATE_ON_PEAK = "on_peak"

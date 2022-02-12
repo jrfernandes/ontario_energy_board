@@ -11,7 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .api import OntarioEnergyBoard
-from .const import DOMAIN, REFRESH_CURRENT_PEAK_TIMEOUT
+from .const import DOMAIN, REFRESH_RATES_IN_MINUTES
 
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -28,7 +28,6 @@ async def async_setup_entry(hass, entry: ConfigEntry):
         entry.unique_id,
         async_get_clientsession(hass),
     )
-    await ontario_energy_board.get_rates()
 
     coordinator = OntarioEnergyBoardDataUpdateCoordinator(
         hass, ontario_energy_board=ontario_energy_board
@@ -62,9 +61,8 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=REFRESH_CURRENT_PEAK_TIMEOUT),
+            update_interval=timedelta(minutes=REFRESH_RATES_IN_MINUTES),
         )
 
     async def _async_update_data(self) -> None:
-        data = await self.ontario_energy_board.refresh_current_peak_data()
-        return data
+        await self.ontario_energy_board.get_rates()
