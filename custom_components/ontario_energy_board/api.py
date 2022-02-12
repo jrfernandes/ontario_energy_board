@@ -4,16 +4,17 @@ import aiohttp
 import async_timeout
 import logging
 import xml.etree.ElementTree as ET
+from datetime import date
 from typing import Final
 
-from bs4 import BeautifulSoup
+import holidays
+from homeassistant.util.dt import as_local, now
 
 from .const import (
-    CURRENT_PEAK_URL,
+    STATE_MID_PEAK,
+    STATE_OFF_PEAK,
+    STATE_ON_PEAK,
     RATES_URL,
-    CLASS_IS_OFF_PEAK,
-    CLASS_IS_MID_PEAK,
-    CLASS_IS_ON_PEAK,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
@@ -50,7 +51,6 @@ class OntarioEnergyBoard:
     """Class to communication with the Ontario Energy Rate services."""
 
     _timeout = 10
-    _active_peak = None
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
@@ -58,6 +58,7 @@ class OntarioEnergyBoard:
     def __init__(self, energy_company, websession):
         self.energy_company = energy_company
         self.websession = websession
+        self.ontario_holidays = holidays.Canada(prov="ON", observed=True)
 
     async def get_rates(self):
         """Parses the official XML document extracting the rates for
@@ -81,31 +82,36 @@ class OntarioEnergyBoard:
 
         _LOGGER.error("Could not find energy rates for %s", self.energy_company)
 
-    async def refresh_current_peak_data(self):
-        """Parses the OER website to find what is the current peak."""
-        async with async_timeout.timeout(self._timeout):
-            response = await self.websession.get(CURRENT_PEAK_URL)
-        content = await response.text()
-
-        soup = BeautifulSoup(content, "html.parser")
-        peak_classes = {
-            "off_peak": CLASS_IS_OFF_PEAK,
-            "mid_peak": CLASS_IS_MID_PEAK,
-            "on_peak": CLASS_IS_ON_PEAK,
-        }
-        for peak_id, peak_class in peak_classes.items():
-            if soup.select(f"li.{peak_class}"):
-                self._active_peak = peak_id
-                return
-
-        _LOGGER.error(
-            "Could not find active peak. Perhaps the webpage layout has changed"
-        )
-
     @property
     def active_peak(self):
-        """Returns the current peak."""
-        return self._active_peak
+        """
+        Find the active peak based on the current day and hour.
+
+        According to OEB, weekends and holidays are 24-hour off peak periods.
+        During summer (observed from May 1st to Oct 31st), the morning and evening
+        periods are mid-peak, and the afternoon is on-peak. This flips during winter
+        time, where morning and evening are on-peak and afternoons mid-peak.
+        """
+        current_time = as_local(now())
+
+        is_summer = (
+            date(current_time.year, 5, 1)
+            <= current_time.date()
+            <= date(current_time.year, 10, 31)
+        )
+        is_holiday = current_time.date() in self.ontario_holidays
+        is_weekend = current_time.weekday() >= 5
+
+        if is_holiday or is_weekend:
+            return STATE_OFF_PEAK
+
+        current_hour = int(current_time.strftime("%H"))
+        if (7 <= current_hour < 11) or (17 <= current_hour < 19):
+            return STATE_MID_PEAK if is_summer else STATE_ON_PEAK
+        if 11 <= current_hour < 17:
+            return STATE_ON_PEAK if is_summer else STATE_MID_PEAK
+
+        return STATE_OFF_PEAK
 
     @property
     def active_peak_rate(self):
