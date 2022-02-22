@@ -1,20 +1,11 @@
 """The Ontario Energy Board component.
 """
-import logging
-from datetime import timedelta
-from typing import Final
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .api import OntarioEnergyBoard
-from .const import DOMAIN, REFRESH_RATES_IN_MINUTES
-
-
-_LOGGER: Final = logging.getLogger(__name__)
+from .const import DOMAIN
+from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
 
 PLATFORMS = [Platform.SENSOR]
@@ -23,15 +14,7 @@ PLATFORMS = [Platform.SENSOR]
 async def async_setup_entry(hass, entry: ConfigEntry):
     """Set up the Ontario Energy Board component."""
     hass.data.setdefault(DOMAIN, {})
-
-    ontario_energy_board = OntarioEnergyBoard(
-        entry.unique_id,
-        async_get_clientsession(hass),
-    )
-
-    coordinator = OntarioEnergyBoardDataUpdateCoordinator(
-        hass, ontario_energy_board=ontario_energy_board
-    )
+    coordinator = OntarioEnergyBoardDataUpdateCoordinator(hass)
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
@@ -47,22 +30,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
-
-
-class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
-    """Coordinator to manage Ontario Energy Board data."""
-
-    def __init__(
-        self, hass: HomeAssistant, *, ontario_energy_board: OntarioEnergyBoard
-    ) -> None:
-        self.ontario_energy_board = ontario_energy_board
-
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=DOMAIN,
-            update_interval=timedelta(minutes=REFRESH_RATES_IN_MINUTES),
-        )
-
-    async def _async_update_data(self) -> None:
-        await self.ontario_energy_board.get_rates()

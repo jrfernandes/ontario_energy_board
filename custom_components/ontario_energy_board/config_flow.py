@@ -1,10 +1,33 @@
 """Config flow for Ontario Energy Board integration."""
 
+import aiohttp
+import xml.etree.ElementTree as ET
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .api import get_energy_companies
-from .const import CONF_ENERGY_COMPANY, DOMAIN
+from .const import CONF_ENERGY_COMPANY, DOMAIN, RATES_URL
+
+
+async def get_energy_companies() -> list[str]:
+    """Generates a list of all energy companies available
+    in the XML document including the available classes.
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(RATES_URL) as response:
+            content = await response.text()
+
+    tree = ET.fromstring(content)
+
+    all_companies = [
+        "{company_name} ({company_class})".format(
+            company_name=company.find("Dist").text,
+            company_class=company.find("Class").text,
+        )
+        for company in tree.findall("BillDataRow")
+    ]
+    all_companies.sort()
+
+    return all_companies
 
 
 class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

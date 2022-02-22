@@ -1,4 +1,5 @@
 """Constants for the Ontario Energy Board integration."""
+from datetime import date, timedelta
 
 DOMAIN = "ontario_energy_board"
 
@@ -8,7 +9,8 @@ RATES_URL = "https://www.oeb.ca/_html/calculator/data/BillData.xml"
 
 RATE_UNIT_OF_MEASURE = "CA$/kWh"
 
-REFRESH_RATES_IN_MINUTES = 60 * 24
+REFRESH_RATES_INTERVAL = timedelta(days=1)
+SCAN_INTERVAL = timedelta(minutes=1)
 
 STATE_MID_PEAK = "mid_peak"
 STATE_ON_PEAK = "on_peak"
