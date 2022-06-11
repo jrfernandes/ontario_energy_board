@@ -5,26 +5,39 @@ import xml.etree.ElementTree as ET
 import voluptuous as vol
 from homeassistant import config_entries
 
-from .const import CONF_ENERGY_COMPANY, DOMAIN, RATES_URL
-
+from .const import (
+    CONF_ENERGY_COMPANY,
+    DOMAIN,
+    ELECTRICITY_RATES_URL,
+    ENERGY_SECTORS,
+    NATUR_GAS_RATES_URL
+)
 
 async def get_energy_companies() -> list[str]:
     """Generates a list of all energy companies available
     in the XML document including the available classes.
     """
-    async with aiohttp.ClientSession() as session:
-        async with session.get(RATES_URL) as response:
-            content = await response.text()
 
-    tree = ET.fromstring(content)
+    all_companies = []
 
-    all_companies = [
-        "{company_name} ({company_class})".format(
-            company_name=company.find("Dist").text,
-            company_class=company.find("Class").text,
-        )
-        for company in tree.findall("BillDataRow")
-    ]
+    for sector in ENERGY_SECTORS:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(ELECTRICITY_RATES_URL if sector == "electricity" else NATUR_GAS_RATES_URL) as response:
+                content = await response.text()
+
+        tree = ET.fromstring(content)
+
+        session._base_url
+
+        all_companies.append([
+            "{company_name} ({company_class}) [{company_sector}]".format(
+                company_name=company.find("Dist").text,
+                company_class=company.find("Class" if sector == "electricity" else "SA").text,
+                company_sector=sector,
+            )
+            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData")
+        ])
+
     all_companies.sort()
 
     return all_companies

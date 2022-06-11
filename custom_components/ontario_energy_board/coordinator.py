@@ -13,7 +13,9 @@ from homeassistant.util import Throttle
 
 from .const import (
     DOMAIN,
-    RATES_URL,
+    ELECTRICITY_RATES_URL,
+    ENERGY_SECTORS,
+    NATUR_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
@@ -31,6 +33,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
+    energy_sector = None
 
     def __init__(self, hass: HomeAssistant) -> None:
         super().__init__(
@@ -49,21 +52,25 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         """Parses the official XML document extracting the rates for
         the selected energy company.
         """
-        async with async_timeout.timeout(self._timeout):
-            response = await self.websession.get(RATES_URL)
 
-        content = await response.text()
-        tree = ET.fromstring(content)
+        for sector in ENERGY_SECTORS:
+            async with async_timeout.timeout(self._timeout):
+                response = await self.websession.get(ELECTRICITY_RATES_URL if sector == 'electricity' else NATUR_GAS_RATES_URL)
+            content = await response.text()
+            tree = ET.fromstring(content)
 
-        for company in tree.findall("BillDataRow"):
-            current_company = "{company_name} ({company_class})".format(
-                company_name=company.find("Dist").text,
-                company_class=company.find("Class").text,
-            )
-            if current_company == self.energy_company:
-                self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
-                self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
-                self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
-                return
+            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData"):
+                current_company = "{company_name} ({company_class}) [{company_sector}]".format(
+                    company_name=company.find("Dist").text,
+                    company_class=company.find("Class" if sector == "electricity" else "SA").text,
+                    company_sector=sector,
+                )
+
+                if current_company == self.energy_company:
+                    self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
+                    self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
+                    self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+                    self.energy_sector = sector
+                    return
 
         self.logger.error("Could not find energy rates for %s", self.energy_company)

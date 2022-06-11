@@ -11,41 +11,48 @@ import holidays
 from homeassistant.util.dt import as_local, now
 
 from .const import (
+    ENERGY_SECTORS,
+    ELECTRICITY_RATES_URL,
+    NATUR_GAS_RATES_URL,
     STATE_MID_PEAK,
+    STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
-    RATES_URL,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
 )
 
-
 _LOGGER: Final = logging.getLogger(__name__)
-
 
 async def get_energy_companies() -> list[str]:
     """Generates a list of all energy companies available
     in the XML document including the available classes.
     """
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(RATES_URL) as response:
-            content = await response.text()
+    all_companies = []
 
-    tree = ET.fromstring(content)
+    for sector in ENERGY_SECTORS:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(ELECTRICITY_RATES_URL if sector == "electricity" else NATUR_GAS_RATES_URL) as response:
+                content = await response.text()
 
-    all_companies = [
-        "{company_name} ({company_class})".format(
-            company_name=company.find("Dist").text,
-            company_class=company.find("Class").text,
-        )
-        for company in tree.findall("BillDataRow")
-    ]
+        tree = ET.fromstring(content)
+
+        session._base_url
+
+        all_companies.append([
+            "{company_name} ({company_class}) [{company_sector}]".format(
+                company_name=company.find("Dist").text,
+                company_class=company.find("Class" if sector == "electricity" else "SA").text,
+                company_sector=sector,
+            )
+            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData")
+        ])
+
     all_companies.sort()
 
     return all_companies
-
 
 class OntarioEnergyBoard:
     """Class to communication with the Ontario Energy Rate services."""
@@ -54,6 +61,7 @@ class OntarioEnergyBoard:
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
+    energy_sector = None
 
     def __init__(self, energy_company, websession):
         self.energy_company = energy_company
@@ -64,21 +72,26 @@ class OntarioEnergyBoard:
         """Parses the official XML document extracting the rates for
         the selected energy company.
         """
-        async with async_timeout.timeout(self._timeout):
-            response = await self.websession.get(RATES_URL)
-        content = await response.text()
-        tree = ET.fromstring(content)
 
-        for company in tree.findall("BillDataRow"):
-            current_company = "{company_name} ({company_class})".format(
-                company_name=company.find("Dist").text,
-                company_class=company.find("Class").text,
-            )
-            if current_company == self.energy_company:
-                self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
-                self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
-                self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
-                return
+        for sector in ENERGY_SECTORS:
+            async with async_timeout.timeout(self._timeout):
+                response = await self.websession.get(ELECTRICITY_RATES_URL if sector == 'electricity' else NATUR_GAS_RATES_URL)
+            content = await response.text()
+            tree = ET.fromstring(content)
+
+            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData"):
+                current_company = "{company_name} ({company_class}) [{company_sector}]".format(
+                    company_name=company.find("Dist").text,
+                    company_class=company.find("Class" if sector == "electricity" else "SA").text,
+                    company_sector=sector,
+                )
+
+                if current_company == self.energy_company:
+                    self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
+                    self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
+                    self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+                    self.energy_sector = sector
+                    return
 
         _LOGGER.error("Could not find energy rates for %s", self.energy_company)
 
@@ -92,6 +105,10 @@ class OntarioEnergyBoard:
         periods are mid-peak, and the afternoon is on-peak. This flips during winter
         time, where morning and evening are on-peak and afternoons mid-peak.
         """
+
+        if self.energy_sector == 'natural_gas':
+            return STATE_NO_PEAK
+
         current_time = as_local(now())
 
         is_summer = (
@@ -116,4 +133,4 @@ class OntarioEnergyBoard:
     @property
     def active_peak_rate(self):
         """Returns the current peak's rate."""
-        return getattr(self, f"{self.active_peak}_rate")
+        return getattr(self, f"{self.active_peak}_rate") if self.energy_sector == 'electricity' else STATE_NO_PEAK

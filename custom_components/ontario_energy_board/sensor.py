@@ -10,8 +10,9 @@ from homeassistant.util.dt import as_local, now
 
 from .const import (
     DOMAIN,
-    RATE_UNIT_OF_MEASURE,
+    ELECTRICITY_RATE_UNIT_OF_MEASURE,
     STATE_MID_PEAK,
+    STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
     SCAN_INTERVAL,
@@ -30,7 +31,7 @@ async def async_setup_entry(
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
 
-    _attr_unit_of_measurement = RATE_UNIT_OF_MEASURE
+    _attr_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
@@ -53,6 +54,10 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         periods are mid-peak, and the afternoon is on-peak. This flips during winter
         time, where morning and evening are on-peak and afternoons mid-peak.
         """
+
+        if self.coordinator.energy_sector == 'natural_gas':
+            return STATE_NO_PEAK
+
         current_time = as_local(now())
 
         is_summer = (
@@ -77,7 +82,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         """Returns the current peak's rate."""
-        return getattr(self.coordinator, f"{self.active_peak}_rate")
+        return getattr(self.coordinator, f"{self.active_peak}_rate")if self.coordinator.energy_sector == 'electricity' else STATE_NO_PEAK
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -85,5 +90,6 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             "off_peak_rate": self.coordinator.off_peak_rate,
             "mid_peak_rate": self.coordinator.mid_peak_rate,
             "on_peak_rate": self.coordinator.on_peak_rate,
+            "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
         }
