@@ -20,6 +20,7 @@ STATE_MID_PEAK = "mid_peak"
 STATE_ON_PEAK = "on_peak"
 STATE_OFF_PEAK = "off_peak"
 STATE_NO_PEAK = "no_peak"
+STATE_NO_PEAK_RATE = "no_peak_rate"
 
 XML_KEY_OFF_PEAK_RATE = "RPPOffP"
 XML_KEY_MID_PEAK_RATE = "RPPMidP"

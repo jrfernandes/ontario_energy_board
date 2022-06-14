@@ -17,6 +17,7 @@ from .const import (
     ENERGY_SECTORS,
     NATUR_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
+    STATE_NO_PEAK_RATE,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
@@ -65,9 +66,9 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 )
 
                 if current_company == self.energy_company:
-                    self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
-                    self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
-                    self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+                    self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
+                    self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
+                    self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
                     self.energy_sector = sector
                     return
 
