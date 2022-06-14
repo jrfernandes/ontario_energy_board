@@ -41,7 +41,7 @@ async def get_energy_companies() -> list[str]:
 
         session._base_url
 
-        for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData")
+        for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData"):
             all_companies.append(
                 "{company_name} ({company_class}) [{company_sector}]".format(
                     company_name=company.find("Dist").text,
