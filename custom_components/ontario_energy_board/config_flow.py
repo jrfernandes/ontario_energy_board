@@ -29,14 +29,14 @@ async def get_energy_companies() -> list[str]:
 
         session._base_url
 
-        all_companies.append([
-            "{company_name} ({company_class}) [{company_sector}]".format(
-                company_name=company.find("Dist").text,
-                company_class=company.find("Class" if sector == "electricity" else "SA").text,
-                company_sector=sector,
+        for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData")
+            all_companies.append(
+                "{company_name} ({company_class}) [{company_sector}]".format(
+                    company_name=company.find("Dist").text,
+                    company_class=company.find("Class" if sector == "electricity" else "SA").text,
+                    company_sector=sector.replace('_', ' ').title(),
+                )
             )
-            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData")
-        ])
 
     all_companies.sort()
 
