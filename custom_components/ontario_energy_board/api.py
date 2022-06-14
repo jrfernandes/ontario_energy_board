@@ -83,7 +83,7 @@ class OntarioEnergyBoard:
                 current_company = "{company_name} ({company_class}) [{company_sector}]".format(
                     company_name=company.find("Dist").text,
                     company_class=company.find("Class" if sector == "electricity" else "SA").text,
-                    company_sector=sector,
+                    company_sector=sector.replace('_', ' ').title(),
                 )
 
                 if current_company == self.energy_company:

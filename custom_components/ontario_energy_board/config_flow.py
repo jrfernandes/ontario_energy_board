@@ -42,7 +42,6 @@ async def get_energy_companies() -> list[str]:
 
     return all_companies
 
-
 class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Ontario Energy Board."""
 

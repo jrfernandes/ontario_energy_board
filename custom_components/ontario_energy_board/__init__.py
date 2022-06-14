@@ -7,9 +7,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
-
 PLATFORMS = [Platform.SENSOR]
-
 
 async def async_setup_entry(hass, entry: ConfigEntry):
     """Set up the Ontario Energy Board component."""
@@ -21,7 +19,6 @@ async def async_setup_entry(hass, entry: ConfigEntry):
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
-
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
