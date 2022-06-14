@@ -16,6 +16,7 @@ from .const import (
     NATUR_GAS_RATES_URL,
     STATE_MID_PEAK,
     STATE_NO_PEAK,
+    STATE_NO_PEAK_RATE,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
     XML_KEY_OFF_PEAK_RATE,
