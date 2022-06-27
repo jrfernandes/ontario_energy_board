@@ -30,7 +30,7 @@ async def async_setup_entry(
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
 
-    _attr_unit_of_measurement = RATE_UNIT_OF_MEASURE
+    _attr_native_unit_of_measurement = RATE_UNIT_OF_MEASURE
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
