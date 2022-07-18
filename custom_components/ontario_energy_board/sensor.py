@@ -8,6 +8,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.dt import as_local, now
 
+from custom_components.ontario_energy_board import coordinator
+
 from .const import (
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
@@ -15,7 +17,6 @@ from .const import (
     STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
-    SCAN_INTERVAL,
 )
 
 async def async_setup_entry(
@@ -80,14 +81,11 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         """Returns the current peak's rate."""
-        return getattr(self.coordinator, f"{self.active_peak}_rate")if self.coordinator.energy_sector == 'electricity' else STATE_NO_PEAK
+        return getattr(self.coordinator.company_data, f"{self.active_peak}_rate", STATE_NO_PEAK)
 
     @property
     def extra_state_attributes(self) -> dict:
         return {
-            "off_peak_rate": self.coordinator.off_peak_rate,
-            "mid_peak_rate": self.coordinator.mid_peak_rate,
-            "on_peak_rate": self.coordinator.on_peak_rate,
             "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
-        }
+        } | self.coordinator.company_data

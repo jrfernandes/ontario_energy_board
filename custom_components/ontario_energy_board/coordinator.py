@@ -21,6 +21,7 @@ from .const import (
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
+    XML_KEY_MAPPINGS,
 )
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -29,10 +30,8 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator to manage Ontario Energy Board data."""
 
     _timeout = 10
-    off_peak_rate = None
-    mid_peak_rate = None
-    on_peak_rate = None
     energy_sector = None
+    company_data = {}
 
     def __init__(self, hass: HomeAssistant) -> None:
         super().__init__(
@@ -66,9 +65,17 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 )
 
                 if current_company == self.energy_company:
-                    self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
-                    self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
-                    self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text) if sector == 'electricity' else STATE_NO_PEAK_RATE
+                    if sector == 'electricity':
+                        self.company_data['off_peak_rate'] = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
+                        self.company_data['mid_peak_rate'] = float(company.find(XML_KEY_MID_PEAK_RATE).text)
+                        self.company_data['on_peak_rate'] = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+
+                    for element in company.iter():
+                        if element.tag in ['BillDataRow', 'GasBillData', 'Lic', 'ExtID']:
+                            continue
+
+                        self.company_data[XML_KEY_MAPPINGS[sector][element.tag] if element.tag in XML_KEY_MAPPINGS[sector] else element.tag.lower()] = element.text
+
                     self.energy_sector = sector
                     return
 
