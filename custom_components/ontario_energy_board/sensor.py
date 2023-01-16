@@ -90,5 +90,8 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             "mid_peak_rate": self.coordinator.mid_peak_rate,
             "on_peak_rate": self.coordinator.on_peak_rate,
             "active_peak": self.active_peak,
-            "season": "Summer" if self.is_summer else "Winter"
+            "season": "Summer" if self.is_summer else "Winter",
+            "tier_threshold": self.coordinator.tier_threshold,
+            "tier_1": self.coordinator.tier_1_rate,
+            "tier_2": self.coordinator.tier_2_rate,
         }

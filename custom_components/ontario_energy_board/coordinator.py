@@ -18,6 +18,9 @@ from .const import (
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
+    XML_KEY_TIER_THRESHOLD,
+    XML_KEY_TIER_1_RATE,
+    XML_KEY_TIER_2_RATE,
 )
 
 
@@ -31,6 +34,9 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
+    tier_threshold = None
+    tier_1_rate = None
+    tier_2_rate = None
 
     def __init__(self, hass: HomeAssistant) -> None:
         super().__init__(
@@ -64,6 +70,9 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
                 self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
                 self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+                self.tier_threshold = float(company.find(XML_KEY_TIER_THRESHOLD).text)
+                self.tier_1_rate = float(company.find(XML_KEY_TIER_1_RATE).text)
+                self.tier_2_rate = float(company.find(XML_KEY_TIER_2_RATE).text)
                 return
 
         self.logger.error("Could not find energy rates for %s", self.energy_company)
