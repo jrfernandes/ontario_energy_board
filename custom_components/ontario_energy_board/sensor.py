@@ -44,6 +44,15 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         return True
 
     @property
+    def is_summer(self) -> bool:
+        current_time = as_local(now())
+        return (
+            date(current_time.year, 5, 1)
+            <= current_time.date()
+            <= date(current_time.year, 10, 31)
+        )
+
+    @property
     def active_peak(self) -> str:
         """
         Find the active peak based on the current day and hour.
@@ -55,11 +64,6 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         """
         current_time = as_local(now())
 
-        is_summer = (
-            date(current_time.year, 5, 1)
-            <= current_time.date()
-            <= date(current_time.year, 10, 31)
-        )
         is_holiday = current_time.date() in self.coordinator.ontario_holidays
         is_weekend = current_time.weekday() >= 5
 
@@ -68,9 +72,9 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         current_hour = int(current_time.strftime("%H"))
         if (7 <= current_hour < 11) or (17 <= current_hour < 19):
-            return STATE_MID_PEAK if is_summer else STATE_ON_PEAK
+            return STATE_MID_PEAK if self.is_summer else STATE_ON_PEAK
         if 11 <= current_hour < 17:
-            return STATE_ON_PEAK if is_summer else STATE_MID_PEAK
+            return STATE_ON_PEAK if self.is_summer else STATE_MID_PEAK
 
         return STATE_OFF_PEAK
 
@@ -86,4 +90,5 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             "mid_peak_rate": self.coordinator.mid_peak_rate,
             "on_peak_rate": self.coordinator.on_peak_rate,
             "active_peak": self.active_peak,
+            "season": "Summer" if self.is_summer else "Winter"
         }
