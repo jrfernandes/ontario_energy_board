@@ -86,6 +86,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return {
+            "energy_company": self.coordinator.energy_company,
             "off_peak_rate": self.coordinator.off_peak_rate,
             "mid_peak_rate": self.coordinator.mid_peak_rate,
             "on_peak_rate": self.coordinator.on_peak_rate,
@@ -94,4 +95,14 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             "tier_threshold": self.coordinator.tier_threshold,
             "tier_1": self.coordinator.tier_1_rate,
             "tier_2": self.coordinator.tier_2_rate,
+            "service_charge": self.coordinator.service_charge,
+            "loss_adjustment_factor": self.coordinator.loss_adjustment_factor,
+            "network_service_rate": self.coordinator.network_service_rate,
+            "connection_service_rate": self.coordinator.connection_service_rate,
+            "wholesale_market_service_rate": self.coordinator.wholesale_market_service_rate,
+            "rural_remote_rate_protection_charge": self.coordinator.rural_remote_rate_protection_charge,
+            "standard_supply_service": self.coordinator.standard_supply_service,
+            "gst": self.coordinator.gst,
+            "rebate": self.coordinator.rebate,
+            "one_time_fixed_charge": self.coordinator.one_time_fixed_charge,
         }
