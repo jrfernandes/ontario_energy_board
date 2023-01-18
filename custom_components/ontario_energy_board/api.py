@@ -1,4 +1,7 @@
 """Utility methods used by the Ontario Energy Board integration.
+
+TECH-DEBT: This class is not being in use anymore. At the moment it's only being
+used for unit tests. These tests should instead be against the sensor component itself.
 """
 import aiohttp
 import async_timeout
