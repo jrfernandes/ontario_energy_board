@@ -14,7 +14,6 @@ from .const import (
     STATE_MID_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
-    SCAN_INTERVAL,
 )
 
 
@@ -24,7 +23,7 @@ async def async_setup_entry(
     """Set up the Ontario Energy Board sensors."""
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
+    async_add_entities([OntarioEnergyBoardSensor(coordinator)])
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
@@ -34,10 +33,10 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
-    def __init__(self, coordinator, energy_company):
+    def __init__(self, coordinator):
         super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_{energy_company}"
-        self._attr_name = f"{energy_company} Rate"
+        self._attr_unique_id = f"{DOMAIN}_{coordinator.energy_company}"
+        self._attr_name = f"{coordinator.energy_company} Rate"
 
     @property
     def should_poll(self) -> bool:
@@ -91,7 +90,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             "mid_peak_rate": self.coordinator.mid_peak_rate,
             "on_peak_rate": self.coordinator.on_peak_rate,
             "active_peak": self.active_peak,
-            "season": "Summer" if self.is_summer else "Winter",
+            "season": "summer" if self.is_summer else "winter",
             "tier_threshold": self.coordinator.tier_threshold,
             "tier_1": self.coordinator.tier_1_rate,
             "tier_2": self.coordinator.tier_2_rate,
