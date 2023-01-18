@@ -21,6 +21,16 @@ from .const import (
     XML_KEY_TIER_THRESHOLD,
     XML_KEY_TIER_1_RATE,
     XML_KEY_TIER_2_RATE,
+    XML_KEY_SERVICE_CHARGE,
+    XML_KEY_LOSS_ADJUSTMENT_FACTOR,
+    XML_KEY_NETWORK_SERVICE_RATE,
+    XML_KEY_CONNECTION_SERVICE_RATE,
+    XML_KEY_WHOLESALE_MARKET_SERVICE_RATE,
+    XML_KEY_RURAL_REMOTE_RATE_PROTECTION_CHARGE,
+    XML_KEY_STANDARD_SUPPLY_SERVICE,
+    XML_KEY_GST,
+    XML_KEY_REBATE,
+    XML_KEY_ONE_TIME_FIXED_CHARGE,
 )
 
 
@@ -37,6 +47,16 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     tier_threshold = None
     tier_1_rate = None
     tier_2_rate = None
+    service_charge = None
+    loss_adjustment_factor = None
+    network_service_rate = None
+    connection_service_rate = None
+    wholesale_market_service_rate = None
+    rural_remote_rate_protection_charge = None
+    standard_supply_service = None
+    gst = None
+    rebate = None
+    one_time_fixed_charge = None
 
     def __init__(self, hass: HomeAssistant) -> None:
         super().__init__(
@@ -73,6 +93,16 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 self.tier_threshold = float(company.find(XML_KEY_TIER_THRESHOLD).text)
                 self.tier_1_rate = float(company.find(XML_KEY_TIER_1_RATE).text)
                 self.tier_2_rate = float(company.find(XML_KEY_TIER_2_RATE).text)
+                self.service_charge = float(company.find(XML_KEY_SERVICE_CHARGE).text)
+                self.loss_adjustment_factor = float(company.find(XML_KEY_LOSS_ADJUSTMENT_FACTOR).text)
+                self.network_service_rate = float(company.find(XML_KEY_NETWORK_SERVICE_RATE).text)
+                self.connection_service_rate = float(company.find(XML_KEY_CONNECTION_SERVICE_RATE).text)
+                self.wholesale_market_service_rate = float(company.find(XML_KEY_WHOLESALE_MARKET_SERVICE_RATE).text)
+                self.rural_remote_rate_protection_charge = float(company.find(XML_KEY_RURAL_REMOTE_RATE_PROTECTION_CHARGE).text)
+                self.standard_supply_service = float(company.find(XML_KEY_STANDARD_SUPPLY_SERVICE).text)
+                self.gst = float(company.find(XML_KEY_GST).text)
+                self.rebate = float(company.find(XML_KEY_REBATE).text)
+                self.one_time_fixed_charge = float(company.find(XML_KEY_ONE_TIME_FIXED_CHARGE).text)
                 return
 
         self.logger.error("Could not find energy rates for %s", self.energy_company)
