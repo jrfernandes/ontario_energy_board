@@ -30,18 +30,27 @@ async def async_setup_entry(
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
 
-    _attr_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE
+    _attr_native_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
-    def __init__(self, coordinator, energy_company):
+    def __init__(self, coordinator):
         super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_{energy_company}"
-        self._attr_name = f"{energy_company} Rate"
+        self._attr_unique_id = f"{DOMAIN}_{coordinator.energy_company}"
+        self._attr_name = f"{coordinator.energy_company} Rate"
 
     @property
     def should_poll(self) -> bool:
         return True
+
+    @property
+    def is_summer(self) -> bool:
+        current_time = as_local(now())
+        return (
+            date(current_time.year, 5, 1)
+            <= current_time.date()
+            <= date(current_time.year, 10, 31)
+        )
 
     @property
     def active_peak(self) -> str:
@@ -59,11 +68,6 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         current_time = as_local(now())
 
-        is_summer = (
-            date(current_time.year, 5, 1)
-            <= current_time.date()
-            <= date(current_time.year, 10, 31)
-        )
         is_holiday = current_time.date() in self.coordinator.ontario_holidays
         is_weekend = current_time.weekday() >= 5
 
@@ -72,9 +76,9 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         current_hour = int(current_time.strftime("%H"))
         if (7 <= current_hour < 11) or (17 <= current_hour < 19):
-            return STATE_MID_PEAK if is_summer else STATE_ON_PEAK
+            return STATE_MID_PEAK if self.is_summer else STATE_ON_PEAK
         if 11 <= current_hour < 17:
-            return STATE_ON_PEAK if is_summer else STATE_MID_PEAK
+            return STATE_ON_PEAK if self.is_summer else STATE_MID_PEAK
 
         return STATE_OFF_PEAK
 
