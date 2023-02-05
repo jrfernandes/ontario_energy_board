@@ -13,10 +13,12 @@ from custom_components.ontario_energy_board import coordinator
 from .const import (
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     STATE_MID_PEAK,
     STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
+    XML_KEY_MAPPINGS,
 )
 
 async def async_setup_entry(
@@ -30,14 +32,14 @@ async def async_setup_entry(
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
 
-    _attr_native_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
-    def __init__(self, coordinator):
+    def __init__(self, coordinator, entity_unique_id):
         super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_{coordinator.energy_company}"
+        self._attr_unique_id = entity_unique_id
         self._attr_name = f"{coordinator.energy_company} Rate"
+        self._attr_native_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE if self.coordinator.energy_sector == 'electricity'  else NATURAL_GAS_RATE_UNIT_OF_MEASURE
 
     @property
     def should_poll(self) -> bool:
@@ -75,6 +77,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             return STATE_OFF_PEAK
 
         current_hour = int(current_time.strftime("%H"))
+
         if (7 <= current_hour < 11) or (17 <= current_hour < 19):
             return STATE_MID_PEAK if self.is_summer else STATE_ON_PEAK
         if 11 <= current_hour < 17:
@@ -83,13 +86,23 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         return STATE_OFF_PEAK
 
     @property
-    def native_value(self) -> float:
+    def native_value(self) -> float | str:
+        rates_mapper = {
+            "on_peak": "time_of_use_on_peak_price",
+            "mid_peak": "time_of_use_mid_peak_price",
+            "off_peak": "time_of_use_off_peak_price",
+            "no_peak": "no_peak_rate",
+        }
+
         """Returns the current peak's rate."""
-        return getattr(self.coordinator.company_data, f"{self.active_peak}_rate", STATE_NO_PEAK)
+        return self.coordinator.company_data[rates_mapper[self.active_peak]] if rates_mapper[self.active_peak] in self.coordinator.company_data else STATE_NO_PEAK
 
     @property
     def extra_state_attributes(self) -> dict:
+        filtered_values = {key: value for key, value in self.coordinator.company_data.items() if key in XML_KEY_MAPPINGS[self.coordinator.energy_sector].values()}
+
         return {
             "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
-        } | self.coordinator.company_data
+            "season": "summer" if self.is_summer else "winter",
+        } | filtered_values
