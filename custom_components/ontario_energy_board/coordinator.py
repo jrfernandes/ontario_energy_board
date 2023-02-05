@@ -50,9 +50,9 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name=DOMAIN,
-            update_interval=REFRESH_RATES_INTERVAL,
-            update_method=self._async_update_data,
+            name = DOMAIN,
+            update_interval = REFRESH_RATES_INTERVAL,
+            update_method = self._async_update_data,
         )
         self.websession = async_get_clientsession(hass)
         self.energy_company = self.config_entry.unique_id
@@ -72,9 +72,9 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
 
             for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData"):
                 current_company = "{company_name} ({company_class}) [{company_sector}]".format(
-                    company_name=company.find("Dist").text,
-                    company_class=company.find("Class" if sector == "electricity" else "SA").text,
-                    company_sector=sector.replace('_', ' ').title(),
+                    company_name = company.find("Dist").text,
+                    company_class = company.find("Class" if sector == "electricity" else "SA").text,
+                    company_sector = sector.replace('_', ' ').title(),
                 )
 
                 if current_company == self.energy_company:
