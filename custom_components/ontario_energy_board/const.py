@@ -24,7 +24,7 @@ XML_KEY_MAPPINGS = {
 		'ET1': 'tier_threshold',
 		'RPP1': 'lower_tier_price',
 		'RPP2': 'higher_tier_price',
-		'DC': 'monthly_fixed_charge',
+		'SC': 'monthly_fixed_charge',
 		'DC': 'distribution_variable_charge',
 		'GA_RR_NONRPP': 'global_adjustment_rate_rider',
 		'Net': 'retail_transmission_network_rate',
