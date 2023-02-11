@@ -3,6 +3,7 @@
 import async_timeout
 import logging
 import xml.etree.ElementTree as ET
+import re
 from typing import Final
 
 import holidays
@@ -14,7 +15,6 @@ from homeassistant.util import Throttle
 from .const import (
     DOMAIN,
     ELECTRICITY_RATES_URL,
-    ENERGY_SECTORS,
     NATUR_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
     XML_KEY_MAPPINGS,
@@ -50,45 +50,51 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         the selected energy company.
         """
 
-        for sector in ENERGY_SECTORS:
-            async with async_timeout.timeout(self._timeout):
-                response = await self.websession.get(ELECTRICITY_RATES_URL if sector == 'electricity' else NATUR_GAS_RATES_URL)
+        self.company_data = {}
 
-            content = await response.text()
-            tree = ET.fromstring(content)
+        company_energy_sector_search = re.search('.*(Natural Gas|Electricity).*', self.energy_company)
+        company_energy_sector = company_energy_sector_search.group(1)
+        self.energy_sector = company_energy_sector
+        company_energy_sector_key = company_energy_sector.lower().replace(' ', '_')
 
-            for company in tree.findall("BillDataRow" if sector == "electricity" else "GasBillData"):
-                current_company = "{company_name} ({company_class}) [{company_sector}]".format(
-                    company_name = company.find("Dist").text,
-                    company_class = company.find("Class" if sector == "electricity" else "SA").text,
-                    company_sector = sector.replace('_', ' ').title(),
-                )
+        async with async_timeout.timeout(self._timeout):
+            response = await self.websession.get(ELECTRICITY_RATES_URL if company_energy_sector_key == 'electricity' else NATUR_GAS_RATES_URL)
 
-                if current_company == self.energy_company:
-                    if sector == 'electricity':
-                        self.company_data['off_peak_rate'] = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
-                        self.company_data['mid_peak_rate'] = float(company.find(XML_KEY_MID_PEAK_RATE).text)
-                        self.company_data['on_peak_rate'] = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+        content = await response.text()
+        tree = ET.fromstring(content)
 
-                    for element in company.iter():
-                        if element.tag in ['BillDataRow', 'GasBillData', 'Lic', 'ExtID']:
-                            continue
+        for company in tree.findall("BillDataRow" if company_energy_sector_key == "electricity" else "GasBillData"):
+            current_company = "{company_name} ({company_class}) [{company_sector}]".format(
+                company_name = company.find("Dist").text,
+                company_class = company.find("Class" if company_energy_sector_key == "electricity" else "SA").text,
+                company_sector = company_energy_sector,
+            )
 
-                        value = element.text
+            if current_company == self.energy_company:
+                if company_energy_sector_key == 'electricity':
+                    self.company_data['off_peak_rate'] = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
+                    self.company_data['mid_peak_rate'] = float(company.find(XML_KEY_MID_PEAK_RATE).text)
+                    self.company_data['on_peak_rate'] = float(company.find(XML_KEY_ON_PEAK_RATE).text)
 
-                        if element.text is not None:
-                            try:
-                                value = float(value)
-                            except ValueError:
-                                value = element.text
-                        else:
-                            value = ''
+                for element in company.iter():
+                    if element.tag in ['BillDataRow', 'GasBillData', 'Lic', 'ExtID']:
+                        continue
 
-                        if element.tag in XML_KEY_MAPPINGS[sector]:
-                            self.company_data[XML_KEY_MAPPINGS[sector][element.tag]] = value
+                    value = element.text
 
-                    self.energy_sector = sector
+                    if element.text is not None:
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            value = element.text
+                    else:
+                        value = ''
 
-                    return
+                    if element.tag in XML_KEY_MAPPINGS[company_energy_sector_key]:
+                        self.company_data[XML_KEY_MAPPINGS[company_energy_sector_key][element.tag]] = value
+
+                self.energy_sector = company_energy_sector_key
+
+                return
 
         self.logger.error("Could not find energy rates for %s", self.energy_company)
