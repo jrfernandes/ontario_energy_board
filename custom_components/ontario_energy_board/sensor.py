@@ -99,11 +99,9 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        filtered_values = {key: value for key, value in self.coordinator.company_data.items() if key in XML_KEY_MAPPINGS[self.coordinator.energy_sector].values()}
-
         return {
             "energy_company": self.coordinator.energy_company,
             "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
             "season": "summer" if self.is_summer else "winter",
-        } | filtered_values
+        } | self.coordinator.company_data
