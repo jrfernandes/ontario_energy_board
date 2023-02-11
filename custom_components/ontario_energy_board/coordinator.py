@@ -18,6 +18,9 @@ from .const import (
     NATUR_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
     XML_KEY_MAPPINGS,
+    XML_KEY_OFF_PEAK_RATE,
+    XML_KEY_MID_PEAK_RATE,
+    XML_KEY_ON_PEAK_RATE
 )
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -62,6 +65,11 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 )
 
                 if current_company == self.energy_company:
+                    if sector == 'electricity':
+                        self.company_data['off_peak_rate'] = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
+                        self.company_data['mid_peak_rate'] = float(company.find(XML_KEY_MID_PEAK_RATE).text)
+                        self.company_data['on_peak_rate'] = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+
                     for element in company.iter():
                         if element.tag in ['BillDataRow', 'GasBillData', 'Lic', 'ExtID']:
                             continue
