@@ -1,0 +1,4 @@
+[flake8]
+import-order-style=google
+extend-ignore=E501,I202
+
