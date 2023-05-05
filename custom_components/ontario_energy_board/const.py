@@ -1,5 +1,5 @@
 """Constants for the Ontario Energy Board integration."""
-from datetime import date, timedelta
+from datetime import timedelta
 
 DOMAIN = "ontario_energy_board"
 
