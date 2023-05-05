@@ -5,7 +5,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    fail-fast: false
 
     steps:
       - name: Check out repository code
