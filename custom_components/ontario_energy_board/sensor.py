@@ -21,6 +21,7 @@ from .const import (
     XML_KEY_MAPPINGS,
 )
 
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -28,6 +29,7 @@ async def async_setup_entry(
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
+
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
@@ -39,7 +41,11 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = entity_unique_id
         self._attr_name = f"{coordinator.energy_company} Rate"
-        self._attr_native_unit_of_measurement = ELECTRICITY_RATE_UNIT_OF_MEASURE if self.coordinator.energy_sector == 'electricity'  else NATURAL_GAS_RATE_UNIT_OF_MEASURE
+        self._attr_native_unit_of_measurement = (
+            ELECTRICITY_RATE_UNIT_OF_MEASURE
+            if self.coordinator.energy_sector == "electricity"
+            else NATURAL_GAS_RATE_UNIT_OF_MEASURE
+        )
 
     @property
     def should_poll(self) -> bool:
@@ -65,7 +71,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         time, where morning and evening are on-peak and afternoons mid-peak.
         """
 
-        if self.coordinator.energy_sector == 'natural_gas':
+        if self.coordinator.energy_sector == "natural_gas":
             return STATE_NO_PEAK
 
         current_time = as_local(now())
@@ -95,7 +101,11 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         }
 
         """Returns the current peak's rate."""
-        return self.coordinator.company_data[rates_mapper[self.active_peak]] if rates_mapper[self.active_peak] in self.coordinator.company_data else STATE_NO_PEAK
+        return (
+            self.coordinator.company_data[rates_mapper[self.active_peak]]
+            if rates_mapper[self.active_peak] in self.coordinator.company_data
+            else STATE_NO_PEAK
+        )
 
     @property
     def extra_state_attributes(self) -> dict:
