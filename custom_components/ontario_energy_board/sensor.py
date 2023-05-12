@@ -8,8 +8,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.dt import as_local, now
 
-from custom_components.ontario_energy_board import coordinator
-
 from .const import (
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
@@ -18,7 +16,6 @@ from .const import (
     STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
-    XML_KEY_MAPPINGS,
 )
 
 
