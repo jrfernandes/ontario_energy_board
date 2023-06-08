@@ -6,7 +6,7 @@
   "issue_tracker": "https://github.com/jrfernandes/ontario_energy_board/issues",
   "requirements": [
     "beautifulsoup4==4.10.0",
-    "holidays==0.12"
+    "holidays==0.21.3"
   ],
   "codeowners": [
     "@jrfernandes"
