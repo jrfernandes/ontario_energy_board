@@ -35,6 +35,11 @@ The sensor will include extra attributes for most of the available data from you
 | Attribute                             | Unit        | Description                                                                |
 |:--------------------------------------|:------------|:---------------------------------------------------------------------------|
 | `energy_company`                      |             | Energy company name                                                        | 
+| `ulo_enabled`                         |             | ULO Rates status                                                           | 
+| `ulo_overnight_rate`                  | CA$/kWh     | ULO Overnight Rate                                                         |
+| `ulo_off_peak_rate`                   | CA$/kWh     | ULO Weekend Off-peak Rate                                                  |
+| `ulo_mid_peak_rate`                   | CA$/kWh     | ULO Mid-peak Rate                                                          |
+| `ulo_on_peak_rate`                    | CA$/kWh     | ULO On-peak Rate                                                           |
 | `off_peak_rate`                       | CA$/kWh     | Off-peak Rate                                                              |
 | `mid_peak_rate`                       | CA$/kWh     | Mid-peak Rate                                                              |
 | `on_peak_rate`                        | CA$/kWh     | On-peak Rate                                                               |

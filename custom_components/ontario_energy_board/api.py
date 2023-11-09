@@ -17,10 +17,18 @@ from .const import (
     STATE_MID_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
+    STATE_ULO_MID_PEAK,
+    STATE_ULO_ON_PEAK,
+    STATE_ULO_OFF_PEAK,
+    STATE_ULO_OVERNIGHT,
     RATES_URL,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
+    XML_KEY_ULO_OVERNIGHT_RATE,
+    XML_KEY_ULO_OFF_PEAK_RATE,
+    XML_KEY_ULO_MID_PEAK_RATE,
+    XML_KEY_ULO_ON_PEAK_RATE,
 )
 
 
@@ -57,9 +65,14 @@ class OntarioEnergyBoard:
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
+    ulo_overnight_rate = None
+    ulo_off_peak_rate = None
+    ulo_mid_peak_rate = None
+    ulo_on_peak_rate = None
 
-    def __init__(self, energy_company, websession):
+    def __init__(self, energy_company, ulo_enabled, websession):
         self.energy_company = energy_company
+        self.ulo_enabled = ulo_enabled
         self.websession = websession
         self.ontario_holidays = holidays.Canada(prov="ON", observed=True)
 
@@ -81,12 +94,47 @@ class OntarioEnergyBoard:
                 self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
                 self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
                 self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
-                return
+                self.ulo_overnight_rate = float(company.find(XML_KEY_ULO_OVERNIGHT_RATE).text)
+                self.ulo_off_peak_rate = float(company.find(XML_KEY_ULO_OFF_PEAK_RATE).text)
+                self.ulo_mid_peak_rate = float(company.find(XML_KEY_ULO_MID_PEAK_RATE).text)
+                self.ulo_on_peak_rate = float(company.find(XML_KEY_ULO_ON_PEAK_RATE).text)
+
+            return
 
         _LOGGER.error("Could not find energy rates for %s", self.energy_company)
 
     @property
-    def active_peak(self):
+    def ulo_active_peak(self) -> str:
+        """
+        Find the active peak based on the current day and hour.
+
+        According to OEB, ULO nighttime rates apply every day. On weekends and
+        holidays, daytime is off-peak. On weekdays, late afternoon and early
+        evening is on-peak. The rest is mid-peak.
+
+        ULO prices and periods are the same all year round.
+        """
+        current_time = as_local(now())
+        current_hour = int(current_time.strftime("%H"))
+
+        is_overnight = current_hour < 7 or current_hour >= 23
+        if is_overnight:
+            return STATE_ULO_OVERNIGHT
+
+        is_holiday = current_time.date() in self.ontario_holidays
+        is_weekend = current_time.weekday() >= 5
+
+        if is_holiday or is_weekend:
+            return STATE_ULO_OFF_PEAK
+
+        is_on_peak = 4 <= current_hour < 9
+        if is_on_peak:
+            return STATE_ULO_ON_PEAK
+
+        return STATE_ULO_MID_PEAK
+
+    @property
+    def tou_active_peak(self):
         """
         Find the active peak based on the current day and hour.
 
@@ -115,6 +163,13 @@ class OntarioEnergyBoard:
             return STATE_ON_PEAK if is_summer else STATE_MID_PEAK
 
         return STATE_OFF_PEAK
+
+    @property
+    def active_peak(self) -> str:
+        if self.ulo_enabled:
+            return self.ulo_active_peak
+        else:
+            return self.tou_active_peak
 
     @property
     def active_peak_rate(self):

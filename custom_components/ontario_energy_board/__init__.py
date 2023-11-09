@@ -1,12 +1,17 @@
 """The Ontario Energy Board component.
 """
+from typing import Final
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ULO_ENABLED
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
+
+_LOGGER: Final = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
 
@@ -29,3 +34,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def async_migrate_entry(hass, config_entry: ConfigEntry):
+    """Migrate old entry to add ULO enabled to false."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    if config_entry.version == 1:
+        new = {**config_entry.data}
+        new[CONF_ULO_ENABLED] = False
+
+        config_entry.version = 2
+        hass.config_entries.async_update_entry(config_entry, data=new)
+
+    _LOGGER.debug("Migration to version %s successful", config_entry.version)
+
+    return True

@@ -11,7 +11,8 @@
         "step": {
             "user": {
                 "data": {
-                    "energy_company": "Energy Company"
+                    "energy_company": "Energy Company",
+                    "ulo_enabled": "Enable ULO rates"
                 },
                 "description": "Select your energy company from the list below.",
                 "title": "Add energy rates sensor"
