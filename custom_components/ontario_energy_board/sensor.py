@@ -86,7 +86,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         if is_holiday or is_weekend:
             return STATE_ULO_OFF_PEAK
 
-        is_on_peak = 4 <= current_hour < 9
+        is_on_peak = 16 <= current_hour < 21
         if is_on_peak:
             return STATE_ULO_ON_PEAK
 
