@@ -100,10 +100,18 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
                 self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
                 self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
-                self.ulo_overnight_rate = float(company.find(XML_KEY_ULO_OVERNIGHT_RATE).text)
-                self.ulo_off_peak_rate = float(company.find(XML_KEY_ULO_OFF_PEAK_RATE).text)
-                self.ulo_mid_peak_rate = float(company.find(XML_KEY_ULO_MID_PEAK_RATE).text)
-                self.ulo_on_peak_rate = float(company.find(XML_KEY_ULO_ON_PEAK_RATE).text)
+                self.ulo_overnight_rate = float(
+                    company.find(XML_KEY_ULO_OVERNIGHT_RATE).text
+                )
+                self.ulo_off_peak_rate = float(
+                    company.find(XML_KEY_ULO_OFF_PEAK_RATE).text
+                )
+                self.ulo_mid_peak_rate = float(
+                    company.find(XML_KEY_ULO_MID_PEAK_RATE).text
+                )
+                self.ulo_on_peak_rate = float(
+                    company.find(XML_KEY_ULO_ON_PEAK_RATE).text
+                )
                 self.tier_threshold = float(company.find(XML_KEY_TIER_THRESHOLD).text)
                 self.tier_1_rate = float(company.find(XML_KEY_TIER_1_RATE).text)
                 self.tier_2_rate = float(company.find(XML_KEY_TIER_2_RATE).text)
