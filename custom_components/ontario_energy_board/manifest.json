@@ -7,7 +7,7 @@
   "requirements": [
     "beautifulsoup4==4.10.0",
     "holidays>=0.21",
-    "hijri_converter>=2.2.4",
+    "hijri_converter>=2.2.4"
   ],
   "codeowners": [
     "@jrfernandes"
