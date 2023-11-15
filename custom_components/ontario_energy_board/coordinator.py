@@ -13,11 +13,16 @@ from homeassistant.util import Throttle
 
 from .const import (
     DOMAIN,
+    CONF_ULO_ENABLED,
     RATES_URL,
     REFRESH_RATES_INTERVAL,
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
+    XML_KEY_ULO_OVERNIGHT_RATE,
+    XML_KEY_ULO_OFF_PEAK_RATE,
+    XML_KEY_ULO_MID_PEAK_RATE,
+    XML_KEY_ULO_ON_PEAK_RATE,
     XML_KEY_TIER_THRESHOLD,
     XML_KEY_TIER_1_RATE,
     XML_KEY_TIER_2_RATE,
@@ -44,6 +49,10 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     off_peak_rate = None
     mid_peak_rate = None
     on_peak_rate = None
+    ulo_overnight_rate = None
+    ulo_off_peak_rate = None
+    ulo_mid_peak_rate = None
+    ulo_on_peak_rate = None
     tier_threshold = None
     tier_1_rate = None
     tier_2_rate = None
@@ -68,6 +77,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self.websession = async_get_clientsession(hass)
         self.energy_company = self.config_entry.unique_id
+        self.ulo_enabled = self.config_entry.data[CONF_ULO_ENABLED]
         self.ontario_holidays = holidays.Canada(prov="ON", observed=True)
 
     @Throttle(REFRESH_RATES_INTERVAL)
@@ -90,6 +100,18 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                 self.off_peak_rate = float(company.find(XML_KEY_OFF_PEAK_RATE).text)
                 self.mid_peak_rate = float(company.find(XML_KEY_MID_PEAK_RATE).text)
                 self.on_peak_rate = float(company.find(XML_KEY_ON_PEAK_RATE).text)
+                self.ulo_overnight_rate = float(
+                    company.find(XML_KEY_ULO_OVERNIGHT_RATE).text
+                )
+                self.ulo_off_peak_rate = float(
+                    company.find(XML_KEY_ULO_OFF_PEAK_RATE).text
+                )
+                self.ulo_mid_peak_rate = float(
+                    company.find(XML_KEY_ULO_MID_PEAK_RATE).text
+                )
+                self.ulo_on_peak_rate = float(
+                    company.find(XML_KEY_ULO_ON_PEAK_RATE).text
+                )
                 self.tier_threshold = float(company.find(XML_KEY_TIER_THRESHOLD).text)
                 self.tier_1_rate = float(company.find(XML_KEY_TIER_1_RATE).text)
                 self.tier_2_rate = float(company.find(XML_KEY_TIER_2_RATE).text)
