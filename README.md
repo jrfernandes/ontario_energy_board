@@ -38,6 +38,11 @@ The sensor will include extra attributes for most of the available data from you
 | `energy_sector`                          | Electricity / Natural Gas |                |              | Energy sector (`electricity` / `natural_gas`)                              |
 | `active_peak`                            | Electricity / Natural Gas |                |              | Active Peak (No Peak - Natural Gas)                                        |
 | `season`                                 | Electricity / Natural Gas |                |              | Current Season (`winter` or `summer`)                                      |
+| `ulo_enabled`                            | Electricity               |                |              | ULO Rates status                                                           |
+| `ulo_overnight_rate`                     | Electricity               |                | CA$/kWh      | ULO Overnight Rate                                                         |
+| `ulo_off_peak_rate`                      | Electricity               |                | CA$/kWh      | ULO Weekend Off-peak Rate                                                  |
+| `ulo_mid_peak_rate`                      | Electricity               |                | CA$/kWh      | ULO Mid-peak Rate                                                          |
+| `ulo_on_peak_rate`                       | Electricity               |                | CA$/kWh      | ULO On-peak Rate                                                           |
 | `off_peak_rate`                          | Electricity               |                | CA$/kWh      | Off-peak Rate                                                              |
 | `mid_peak_rate`                          | Electricity               |                | CA$/kWh      | Mid-peak Rate                                                              |
 | `on_peak_rate`                           | Electricity               |                | CA$/kWh      | On-peak Rate                                                               |

@@ -9,12 +9,13 @@ from .const import STATE_MID_PEAK, STATE_OFF_PEAK, STATE_ON_PEAK
 energy_company = (
     "Newmarket-Tay Power Distribution Ltd.-For Newmarket-Tay Power Main Rate Zone"
 )
+ulo_enabled = False
 
 
 @pytest_asyncio.fixture
 async def oeb():
     async with aiohttp.ClientSession() as websession:
-        yield OntarioEnergyBoard(energy_company, websession)
+        yield OntarioEnergyBoard(energy_company, ulo_enabled, websession)
 
 
 def test_active_peak_with_summer_weekday(oeb, mocker):

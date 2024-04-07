@@ -4,6 +4,7 @@ from datetime import timedelta
 DOMAIN = "ontario_energy_board"
 
 CONF_ENERGY_COMPANY = "energy_company"
+CONF_ULO_ENABLED = "ulo_enabled"
 
 ENERGY_SECTORS = ["electricity", "natural_gas"]
 
@@ -103,7 +104,15 @@ STATE_ON_PEAK = "on_peak"
 STATE_OFF_PEAK = "off_peak"
 STATE_NO_PEAK = "no_peak"
 STATE_NO_PEAK_RATE = "no_peak_rate"
+STATE_ULO_MID_PEAK = "ulo_mid_peak"
+STATE_ULO_ON_PEAK = "ulo_on_peak"
+STATE_ULO_OFF_PEAK = "ulo_off_peak"
+STATE_ULO_OVERNIGHT = "ulo_overnight"
 
 XML_KEY_OFF_PEAK_RATE = "RPPOffP"
 XML_KEY_MID_PEAK_RATE = "RPPMidP"
 XML_KEY_ON_PEAK_RATE = "RPPOnP"
+XML_KEY_ULO_OVERNIGHT_RATE = "ULO_overnight"
+XML_KEY_ULO_OFF_PEAK_RATE = "ULO_weekendoffp"
+XML_KEY_ULO_MID_PEAK_RATE = "ULO_midp"
+XML_KEY_ULO_ON_PEAK_RATE = "ULO_onp"

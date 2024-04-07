@@ -14,6 +14,7 @@ from homeassistant.util import Throttle
 
 from .const import (
     DOMAIN,
+    CONF_ULO_ENABLED,
     ELECTRICITY_RATES_URL,
     NATUR_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
@@ -21,6 +22,10 @@ from .const import (
     XML_KEY_OFF_PEAK_RATE,
     XML_KEY_MID_PEAK_RATE,
     XML_KEY_ON_PEAK_RATE,
+    XML_KEY_ULO_OVERNIGHT_RATE,
+    XML_KEY_ULO_OFF_PEAK_RATE,
+    XML_KEY_ULO_MID_PEAK_RATE,
+    XML_KEY_ULO_ON_PEAK_RATE,
 )
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -43,6 +48,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self.websession = async_get_clientsession(hass)
         self.energy_company = self.config_entry.unique_id
+        self.ulo_enabled = self.config_entry.data[CONF_ULO_ENABLED]
         self.ontario_holidays = holidays.Canada(prov="ON", observed=True)
 
     @Throttle(REFRESH_RATES_INTERVAL)
@@ -95,6 +101,18 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                     self.company_data["on_peak_rate"] = float(
                         company.find(XML_KEY_ON_PEAK_RATE).text
+                    )
+                    self.company_data['ulo_overnight_rate'] = float(
+                        company.find(XML_KEY_ULO_OVERNIGHT_RATE).text
+                    )
+                    self.company_data['ulo_off_peak_rate'] = float(
+                        company.find(XML_KEY_ULO_OFF_PEAK_RATE).text
+                    )
+                    self.company_data['ulo_mid_peak_rate'] = float(
+                        company.find(XML_KEY_ULO_MID_PEAK_RATE).text
+                    )
+                    self.company_data['ulo_on_peak_rate'] = float(
+                        company.find(XML_KEY_ULO_ON_PEAK_RATE).text
                     )
 
                 for element in company.iter():

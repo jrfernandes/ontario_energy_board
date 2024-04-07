@@ -16,6 +16,10 @@ from .const import (
     STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
+    STATE_ULO_MID_PEAK,
+    STATE_ULO_ON_PEAK,
+    STATE_ULO_OFF_PEAK,
+    STATE_ULO_OVERNIGHT,
 )
 
 
@@ -59,10 +63,47 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def active_peak(self) -> str:
+        if self.coordinator.ulo_enabled:
+            return self.ulo_active_peak
+        else:
+            return self.tou_active_peak
+
+    @property
+    def ulo_active_peak(self) -> str:
         """
         Find the active peak based on the current day and hour.
 
-        According to OEB, weekends and holidays are 24-hour off peak periods.
+        According to OEB, ULO nighttime rates apply every day. On weekends and
+        holidays, daytime is off-peak. On weekdays, late afternoon and early
+        evening is on-peak. The rest is mid-peak.
+
+        ULO prices and periods are the same all year round.
+        """
+        current_time = as_local(now())
+        current_hour = int(current_time.strftime("%H"))
+
+        is_overnight = current_hour < 7 or current_hour >= 23
+        if is_overnight:
+            return STATE_ULO_OVERNIGHT
+
+        is_holiday = current_time.date() in self.coordinator.ontario_holidays
+        is_weekend = current_time.weekday() >= 5
+
+        if is_holiday or is_weekend:
+            return STATE_ULO_OFF_PEAK
+
+        is_on_peak = 16 <= current_hour < 21
+        if is_on_peak:
+            return STATE_ULO_ON_PEAK
+
+        return STATE_ULO_MID_PEAK
+
+    @property
+    def tou_active_peak(self) -> str:
+        """
+        Find the active peak based on the current day and hour.
+
+        According to OEB, weekends and holidays are 24-hour off-peak periods.
         During summer (observed from May 1st to Oct 31st), the morning and evening
         periods are mid-peak, and the afternoon is on-peak. This flips during winter
         time, where morning and evening are on-peak and afternoons mid-peak.
