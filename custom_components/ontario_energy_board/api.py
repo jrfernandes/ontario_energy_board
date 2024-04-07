@@ -3,6 +3,7 @@
 TECH-DEBT: This class is not being in use anymore. At the moment it's only being
 used for unit tests. These tests should instead be against the sensor component itself.
 """
+
 import aiohttp
 import async_timeout
 import logging
@@ -140,10 +141,26 @@ class OntarioEnergyBoard:
                         else STATE_NO_PEAK_RATE
                     )
                     self.energy_sector = sector
-                    self.ulo_overnight_rate = float(company.find(XML_KEY_ULO_OVERNIGHT_RATE).text) if sector == "electricity" else STATE_NO_PEAK_RATE
-                    self.ulo_off_peak_rate = float(company.find(XML_KEY_ULO_OFF_PEAK_RATE).text) if sector == "electricity" else STATE_NO_PEAK_RATE
-                    self.ulo_mid_peak_rate = float(company.find(XML_KEY_ULO_MID_PEAK_RATE).text) if sector == "electricity" else STATE_NO_PEAK_RATE
-                    self.ulo_on_peak_rate = float(company.find(XML_KEY_ULO_ON_PEAK_RATE).text) if sector == "electricity" else STATE_NO_PEAK_RATE
+                    self.ulo_overnight_rate = (
+                        float(company.find(XML_KEY_ULO_OVERNIGHT_RATE).text)
+                        if sector == "electricity"
+                        else STATE_NO_PEAK_RATE
+                    )
+                    self.ulo_off_peak_rate = (
+                        float(company.find(XML_KEY_ULO_OFF_PEAK_RATE).text)
+                        if sector == "electricity"
+                        else STATE_NO_PEAK_RATE
+                    )
+                    self.ulo_mid_peak_rate = (
+                        float(company.find(XML_KEY_ULO_MID_PEAK_RATE).text)
+                        if sector == "electricity"
+                        else STATE_NO_PEAK_RATE
+                    )
+                    self.ulo_on_peak_rate = (
+                        float(company.find(XML_KEY_ULO_ON_PEAK_RATE).text)
+                        if sector == "electricity"
+                        else STATE_NO_PEAK_RATE
+                    )
 
             return
 

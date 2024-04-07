@@ -1,5 +1,6 @@
 """The Ontario Energy Board component.
 """
+
 from typing import Final
 import logging
 

@@ -1,4 +1,5 @@
 """Sensor integration for Ontario Energy Board."""
+
 from datetime import date
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity

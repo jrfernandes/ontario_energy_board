@@ -1,5 +1,6 @@
 """Utility methods used by the Ontario Energy Board integration.
 """
+
 import async_timeout
 import logging
 import xml.etree.ElementTree as ET
@@ -102,16 +103,16 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
                     self.company_data["on_peak_rate"] = float(
                         company.find(XML_KEY_ON_PEAK_RATE).text
                     )
-                    self.company_data['ulo_overnight_rate'] = float(
+                    self.company_data["ulo_overnight_rate"] = float(
                         company.find(XML_KEY_ULO_OVERNIGHT_RATE).text
                     )
-                    self.company_data['ulo_off_peak_rate'] = float(
+                    self.company_data["ulo_off_peak_rate"] = float(
                         company.find(XML_KEY_ULO_OFF_PEAK_RATE).text
                     )
-                    self.company_data['ulo_mid_peak_rate'] = float(
+                    self.company_data["ulo_mid_peak_rate"] = float(
                         company.find(XML_KEY_ULO_MID_PEAK_RATE).text
                     )
-                    self.company_data['ulo_on_peak_rate'] = float(
+                    self.company_data["ulo_on_peak_rate"] = float(
                         company.find(XML_KEY_ULO_ON_PEAK_RATE).text
                     )
 
