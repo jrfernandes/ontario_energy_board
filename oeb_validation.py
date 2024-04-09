@@ -21,7 +21,10 @@ natural_gas_data_tree = ET.fromstring(natural_gas_data.content)
 # Excluded keys
 excluded_keys = {
     "electricity": [],
-    "natural_gas": ["Lic", "ExtID"], # Lic & ExtID - don't have any substantial importance
+    "natural_gas": [
+        "Lic",
+        "ExtID",
+    ],  # Lic & ExtID - don't have any substantial importance
 }
 
 # Calculate the different in keys and create dictionary
