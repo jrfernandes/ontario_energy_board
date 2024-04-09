@@ -50,9 +50,6 @@ XML_KEY_MAPPINGS = {
         "DRP": "distribution_rate_protection",
         "DRC": "debt_retirement_charge",
         "DRP_Rate": "distribution_rate_protection_rate",
-        # "OFPR": "off_peak_rate", --- Not included anymore
-        # "MPR": "mid_peak_rate",  --- Not included anymore
-        # "ONPR": "on_peak_rate",  --- Not included anymore
     },
     "natural_gas": {
         "Dist": "distributor_name",
