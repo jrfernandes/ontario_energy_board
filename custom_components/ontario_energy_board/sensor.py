@@ -1,4 +1,5 @@
 """Sensor integration for Ontario Energy Board."""
+
 from datetime import date
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -10,8 +11,10 @@ from homeassistant.util.dt import as_local, now
 
 from .const import (
     DOMAIN,
-    RATE_UNIT_OF_MEASURE,
+    ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     STATE_MID_PEAK,
+    STATE_NO_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
     STATE_ULO_MID_PEAK,
@@ -27,20 +30,24 @@ async def async_setup_entry(
     """Set up the Ontario Energy Board sensors."""
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([OntarioEnergyBoardSensor(coordinator)])
+    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     """Sensor object for Ontario Energy Board."""
 
-    _attr_native_unit_of_measurement = RATE_UNIT_OF_MEASURE
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
-    def __init__(self, coordinator):
+    def __init__(self, coordinator, entity_unique_id):
         super().__init__(coordinator)
-        self._attr_unique_id = f"{DOMAIN}_{coordinator.energy_company}"
+        self._attr_unique_id = entity_unique_id
         self._attr_name = f"{coordinator.energy_company} Rate"
+        self._attr_native_unit_of_measurement = (
+            ELECTRICITY_RATE_UNIT_OF_MEASURE
+            if self.coordinator.energy_sector == "electricity"
+            else NATURAL_GAS_RATE_UNIT_OF_MEASURE
+        )
 
     @property
     def should_poll(self) -> bool:
@@ -102,6 +109,10 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         periods are mid-peak, and the afternoon is on-peak. This flips during winter
         time, where morning and evening are on-peak and afternoons mid-peak.
         """
+
+        if self.coordinator.energy_sector == "natural_gas":
+            return STATE_NO_PEAK
+
         current_time = as_local(now())
 
         is_holiday = current_time.date() in self.coordinator.ontario_holidays
@@ -111,6 +122,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             return STATE_OFF_PEAK
 
         current_hour = int(current_time.strftime("%H"))
+
         if (7 <= current_hour < 11) or (17 <= current_hour < 19):
             return STATE_MID_PEAK if self.is_summer else STATE_ON_PEAK
         if 11 <= current_hour < 17:
@@ -119,35 +131,26 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         return STATE_OFF_PEAK
 
     @property
-    def native_value(self) -> float:
+    def native_value(self) -> float | str:
+        rates_mapper = {
+            "on_peak": "time_of_use_on_peak_price",
+            "mid_peak": "time_of_use_mid_peak_price",
+            "off_peak": "time_of_use_off_peak_price",
+            "no_peak": "no_peak_rate",
+        }
+
         """Returns the current peak's rate."""
-        return getattr(self.coordinator, f"{self.active_peak}_rate")
+        return (
+            self.coordinator.company_data[rates_mapper[self.active_peak]]
+            if rates_mapper[self.active_peak] in self.coordinator.company_data
+            else STATE_NO_PEAK
+        )
 
     @property
     def extra_state_attributes(self) -> dict:
         return {
             "energy_company": self.coordinator.energy_company,
-            "ulo_enabled": self.coordinator.ulo_enabled,
-            "off_peak_rate": self.coordinator.off_peak_rate,
-            "mid_peak_rate": self.coordinator.mid_peak_rate,
-            "on_peak_rate": self.coordinator.on_peak_rate,
-            "ulo_overnight_rate": self.coordinator.ulo_overnight_rate,
-            "ulo_off_peak_rate": self.coordinator.ulo_off_peak_rate,
-            "ulo_mid_peak_rate": self.coordinator.ulo_mid_peak_rate,
-            "ulo_on_peak_rate": self.coordinator.ulo_on_peak_rate,
+            "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
             "season": "summer" if self.is_summer else "winter",
-            "tier_threshold": self.coordinator.tier_threshold,
-            "tier_1": self.coordinator.tier_1_rate,
-            "tier_2": self.coordinator.tier_2_rate,
-            "service_charge": self.coordinator.service_charge,
-            "loss_adjustment_factor": self.coordinator.loss_adjustment_factor,
-            "network_service_rate": self.coordinator.network_service_rate,
-            "connection_service_rate": self.coordinator.connection_service_rate,
-            "wholesale_market_service_rate": self.coordinator.wholesale_market_service_rate,
-            "rural_remote_rate_protection_charge": self.coordinator.rural_remote_rate_protection_charge,
-            "standard_supply_service": self.coordinator.standard_supply_service,
-            "gst": self.coordinator.gst,
-            "rebate": self.coordinator.rebate,
-            "one_time_fixed_charge": self.coordinator.one_time_fixed_charge,
-        }
+        } | self.coordinator.company_data

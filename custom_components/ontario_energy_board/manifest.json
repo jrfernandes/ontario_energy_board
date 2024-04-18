@@ -1,17 +1,15 @@
 {
-  "domain": "ontario_energy_board",
-  "name": "Ontario Energy Board",
-  "config_flow": true,
-  "documentation": "https://github.com/jrfernandes/ontario_energy_board",
-  "issue_tracker": "https://github.com/jrfernandes/ontario_energy_board/issues",
-  "requirements": [
-    "beautifulsoup4==4.10.0",
-    "holidays>=0.21",
-    "hijri_converter>=2.2.4"
-  ],
-  "codeowners": [
-    "@jrfernandes"
-  ],
-  "iot_class": "cloud_polling",
-  "version": "0.3.6"
+	"domain": "ontario_energy_board",
+	"name": "Ontario Energy Board",
+	"codeowners": ["@jrfernandes", "@n3rdp1um23"],
+	"config_flow": true,
+	"documentation": "https://github.com/jrfernandes/ontario_energy_board",
+	"iot_class": "cloud_polling",
+	"issue_tracker": "https://github.com/jrfernandes/ontario_energy_board/issues",
+	"requirements": [
+		"beautifulsoup4==4.12.3",
+		"holidays>=0.46",
+		"hijri_converter>=2.3.1"
+	],
+	"version": "0.4.0"
 }
