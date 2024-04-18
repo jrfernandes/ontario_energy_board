@@ -10,7 +10,7 @@ CONF_ULO_ENABLED = "ulo_enabled"
 ENERGY_SECTORS = ["electricity", "natural_gas"]
 
 ELECTRICITY_RATES_URL = "https://www.oeb.ca/_html/calculator/data/BillData.xml"
-NATUR_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xml"
+NATURAL_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xml"
 
 ELECTRICITY_RATE_UNIT_OF_MEASURE = "CA $/kWh"
 NATURAL_GAS_RATE_UNIT_OF_MEASURE = "CA ¢/m³"

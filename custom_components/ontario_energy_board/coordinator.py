@@ -17,7 +17,7 @@ from .const import (
     DOMAIN,
     CONF_ULO_ENABLED,
     ELECTRICITY_RATES_URL,
-    NATUR_GAS_RATES_URL,
+    NATURAL_GAS_RATES_URL,
     REFRESH_RATES_INTERVAL,
     XML_KEY_MAPPINGS,
     XML_KEY_OFF_PEAK_RATE,
@@ -71,7 +71,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
             response = await self.websession.get(
                 ELECTRICITY_RATES_URL
                 if company_energy_sector_key == "electricity"
-                else NATUR_GAS_RATES_URL
+                else NATURAL_GAS_RATES_URL
             )
 
         content = await response.text()

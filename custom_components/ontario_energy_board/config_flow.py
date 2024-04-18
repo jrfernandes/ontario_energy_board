@@ -11,7 +11,7 @@ from .const import (
     DOMAIN,
     ELECTRICITY_RATES_URL,
     ENERGY_SECTORS,
-    NATUR_GAS_RATES_URL,
+    NATURAL_GAS_RATES_URL,
 )
 
 
@@ -27,7 +27,7 @@ async def get_energy_companies() -> list[str]:
             async with session.get(
                 ELECTRICITY_RATES_URL
                 if sector == "electricity"
-                else NATUR_GAS_RATES_URL
+                else NATURAL_GAS_RATES_URL
             ) as response:
                 content = await response.text()
 

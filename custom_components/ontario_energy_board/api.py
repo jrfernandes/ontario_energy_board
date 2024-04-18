@@ -17,7 +17,7 @@ from homeassistant.util.dt import as_local, now
 from .const import (
     ENERGY_SECTORS,
     ELECTRICITY_RATES_URL,
-    NATUR_GAS_RATES_URL,
+    NATURAL_GAS_RATES_URL,
     STATE_MID_PEAK,
     STATE_NO_PEAK,
     STATE_NO_PEAK_RATE,
@@ -51,7 +51,7 @@ async def get_energy_companies() -> list[str]:
             async with session.get(
                 ELECTRICITY_RATES_URL
                 if sector == "electricity"
-                else NATUR_GAS_RATES_URL
+                else NATURAL_GAS_RATES_URL
             ) as response:
                 content = await response.text()
 
@@ -106,7 +106,7 @@ class OntarioEnergyBoard:
                 response = await self.websession.get(
                     ELECTRICITY_RATES_URL
                     if sector == "electricity"
-                    else NATUR_GAS_RATES_URL
+                    else NATURAL_GAS_RATES_URL
                 )
             content = await response.text()
             tree = ET.fromstring(content)
