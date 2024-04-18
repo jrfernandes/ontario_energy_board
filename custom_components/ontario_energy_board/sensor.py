@@ -80,6 +80,10 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         ULO prices and periods are the same all year round.
         """
+
+        if self.coordinator.energy_sector == "natural_gas":
+            return STATE_NO_PEAK
+
         current_time = as_local(now())
         current_hour = int(current_time.strftime("%H"))
 
