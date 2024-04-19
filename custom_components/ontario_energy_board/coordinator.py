@@ -60,7 +60,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
             self.energy_sector, self.energy_company
         )
 
-        if not self.company_data is None:
+        if self.company_data is not None:
             return
 
         self.logger.error("Could not find energy rates for %s", self.energy_company)
