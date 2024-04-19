@@ -22,4 +22,4 @@ jobs:
           pip install -r ci_requirements.txt
 
       - name: Run test suite
-        run: pytest --asyncio-mode=strict
+        run: pytest .
