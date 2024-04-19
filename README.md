@@ -30,7 +30,7 @@ Once installed, use the UI to add the new component to your setup, or click on t
 
 ### Attributes
 
-The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:
+The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro and or natural gas bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:
 
 | Attribute                                | Sector                    | OEB Key        | Unit         | Description                                                                |
 |:-----------------------------------------|:--------------------------|:---------------|:-------------|:---------------------------------------------------------------------------|
