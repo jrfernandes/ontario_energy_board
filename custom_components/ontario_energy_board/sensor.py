@@ -60,6 +60,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     @property
     def is_summer(self) -> bool:
         current_time = as_local(now())
+
         return (
             date(current_time.year, 5, 1)
             <= current_time.date()
