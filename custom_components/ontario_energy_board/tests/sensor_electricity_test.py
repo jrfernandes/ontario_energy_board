@@ -114,7 +114,7 @@ def sensor(mock_coordinator):
 @pytest.mark.parametrize(
     "current_date, expected_summer",
     [
-        (datetime(2024, 6, 1, 0, 0, 0), True),  # Summer date
+        (datetime(2024, 5, 1, 0, 0, 0), True),  # Summer date
         (datetime(2024, 11, 1, 0, 0, 0), False),  # Winter date
     ],
 )
