@@ -9,18 +9,19 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.dt import as_local, now
 
+from .common import get_energy_sector_metadata
+
 from .const import (
     DOMAIN,
-    ELECTRICITY_RATE_UNIT_OF_MEASURE,
-    NATURAL_GAS_RATE_UNIT_OF_MEASURE,
-    STATE_MID_PEAK,
-    STATE_NO_PEAK,
-    STATE_OFF_PEAK,
+    PEAK_KEY_MAPPINGS,
     STATE_ON_PEAK,
-    STATE_ULO_MID_PEAK,
+    STATE_MID_PEAK,
+    STATE_OFF_PEAK,
     STATE_ULO_ON_PEAK,
+    STATE_ULO_MID_PEAK,
     STATE_ULO_OFF_PEAK,
     STATE_ULO_OVERNIGHT,
+    STATE_NO_PEAK,
 )
 
 
@@ -41,13 +42,16 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator, entity_unique_id):
         super().__init__(coordinator)
+
+        energy_company_metadata = get_energy_sector_metadata(
+            self.coordinator.energy_sector
+        )
+
         self._attr_unique_id = entity_unique_id
         self._attr_name = f"{coordinator.energy_company} Rate"
-        self._attr_native_unit_of_measurement = (
-            ELECTRICITY_RATE_UNIT_OF_MEASURE
-            if self.coordinator.energy_sector == "electricity"
-            else NATURAL_GAS_RATE_UNIT_OF_MEASURE
-        )
+        self._attr_native_unit_of_measurement = energy_company_metadata[
+            "unit_of_measure"
+        ]
 
     @property
     def should_poll(self) -> bool:
@@ -64,6 +68,9 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def active_peak(self) -> str:
+        if self.coordinator.energy_sector == "natural_gas":
+            return STATE_NO_PEAK
+
         if self.coordinator.ulo_enabled:
             return self.ulo_active_peak
         else:
@@ -111,7 +118,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         According to OEB, weekends and holidays are 24-hour off-peak periods.
         During summer (observed from May 1st to Oct 31st), the morning and evening
         periods are mid-peak, and the afternoon is on-peak. This flips during winter
-        time, where morning and evening are on-peak and afternoons mid-peak.
+        time, where morning and evening are on-peak and afternoons are mid-peak.
         """
 
         if self.coordinator.energy_sector == "natural_gas":
@@ -136,19 +143,18 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | str:
-        rates_mapper = {
-            "on_peak": "time_of_use_on_peak_price",
-            "mid_peak": "time_of_use_mid_peak_price",
-            "off_peak": "time_of_use_off_peak_price",
-            "no_peak": "no_peak_rate",
-        }
-
         """Returns the current peak's rate."""
-        return (
-            self.coordinator.company_data[rates_mapper[self.active_peak]]
-            if rates_mapper[self.active_peak] in self.coordinator.company_data
-            else STATE_NO_PEAK
-        )
+        active_peak_rate_key = PEAK_KEY_MAPPINGS[
+            "{active_peak}_rate".format(active_peak=self.active_peak)
+        ]
+
+        if (
+            self.coordinator.energy_sector == "electricity"
+            and active_peak_rate_key in self.coordinator.company_data
+        ):
+            return self.coordinator.company_data[active_peak_rate_key]
+
+        return 0
 
     @property
     def extra_state_attributes(self) -> dict:
