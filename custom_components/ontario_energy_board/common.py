@@ -5,10 +5,12 @@ import xml.etree.ElementTree as ET
 from .const import (
     ELECTRICITY_CLASS_KEY,
     ELECTRICITY_NAME_KEY,
+    ELECTRICITY_RATE_UNIT_OF_MEASURE,
     ELECTRICITY_RATES_URL,
     ENERGY_SECTORS,
     NATURAL_GAS_CLASS_KEY,
     NATURAL_GAS_NAME_KEY,
+    NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATES_URL,
     ELECTRICITY_XML_ROOT_ELEMENT,
     NATURAL_GAS_XML_ROOT_ELEMENT,
@@ -47,6 +49,13 @@ def get_energy_sector_metadata(sector) -> str:
         ),
         "name_key": (
             ELECTRICITY_NAME_KEY if sector == "electricity" else NATURAL_GAS_NAME_KEY
+        ),
+        "unit_of_measure": (
+            (
+                ELECTRICITY_RATE_UNIT_OF_MEASURE
+                if sector == "electricity"
+                else NATURAL_GAS_RATE_UNIT_OF_MEASURE
+            ),
         ),
     }
 
