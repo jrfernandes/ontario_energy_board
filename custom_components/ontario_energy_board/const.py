@@ -118,13 +118,13 @@ STATE_ULO_OVERNIGHT = "ulo_overnight"
 STATE_NO_PEAK = "no_peak"
 
 PEAK_KEY_MAPPINGS = {
-    STATE_ON_PEAK: 'time_of_use_on_peak_price',
-    STATE_MID_PEAK: 'time_of_use_mid_peak_price',
-    STATE_OFF_PEAK: 'time_of_use_off_peak_price',
-    STATE_ULO_ON_PEAK: 'ultra_low_overnight_on_peak_rate',
-    STATE_ULO_MID_PEAK: 'ultra_low_overnight_mid_peak_rate',
-    STATE_ULO_OFF_PEAK: 'ultra_low_overnight_weekend_off_peak_rate',
-    STATE_ULO_OVERNIGHT: 'ultra_low_overnight_overnight_rate',
+    STATE_ON_PEAK: "time_of_use_on_peak_price",
+    STATE_MID_PEAK: "time_of_use_mid_peak_price",
+    STATE_OFF_PEAK: "time_of_use_off_peak_price",
+    STATE_ULO_ON_PEAK: "ultra_low_overnight_on_peak_rate",
+    STATE_ULO_MID_PEAK: "ultra_low_overnight_mid_peak_rate",
+    STATE_ULO_OFF_PEAK: "ultra_low_overnight_weekend_off_peak_rate",
+    STATE_ULO_OVERNIGHT: "ultra_low_overnight_overnight_rate",
 }
 
 XML_KEY_ON_PEAK_RATE = "RPPOnP"
