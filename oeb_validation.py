@@ -1,5 +1,4 @@
-"""Valication script to ensure coverage of OEB data parameters.
-"""
+"""Valication script to ensure coverage of OEB data parameters."""
 
 import sys
 from custom_components.ontario_energy_board.const import (
