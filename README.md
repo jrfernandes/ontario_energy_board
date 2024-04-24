@@ -3,9 +3,10 @@
 [![Tests](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/pytest.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/pytest.yml)
 [![hacs validation](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hacs.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hacs.yml)
 [![hassfest validation](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hassfest.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hassfest.yml)
+[![OEB Coverage](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml)
 
 
-This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based companies, using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
+This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based energy companies (Electricity and Natural Gas), using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
 
 ![Preview](assets/sensor-preview.png)
 
