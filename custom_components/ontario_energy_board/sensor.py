@@ -144,7 +144,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | str:
-        """Returns the current peak's rate."""
+        """Returns the current peak's rate for electricity companies or the gas supply charge for natural gas companies."""
 
         company_data = self.coordinator.company_data
 
@@ -154,7 +154,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
             if active_peak_mapping is not None and active_peak_mapping in company_data:
                 return company_data[active_peak_mapping]
 
-        return company_data['gas_supply_charge']
+        return company_data["gas_supply_charge"]
 
     @property
     def extra_state_attributes(self) -> dict:

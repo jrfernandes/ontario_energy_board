@@ -36,7 +36,7 @@ def format_company_name(company_name, rate_class, energy_sector) -> str:
 def get_energy_sector_metadata(sector) -> str:
     """Returns the respective energy sector metadata."""
     return {
-        "name": 'Electricity' if sector == 'electricity' else 'Natural Gas',
+        "name": "Electricity" if sector == "electricity" else "Natural Gas",
         "xml_url": (
             ELECTRICITY_RATES_URL if sector == "electricity" else NATURAL_GAS_RATES_URL
         ),
@@ -107,7 +107,7 @@ async def get_energy_company_data(sector, desired_company) -> dict | None:
         current_company = format_company_name(
             company.find(energy_sector_metadata["name_key"]).text,
             company.find(energy_sector_metadata["class_key"]).text,
-            energy_sector_metadata['name'],
+            energy_sector_metadata["name"],
         )
 
         if current_company == desired_company:
