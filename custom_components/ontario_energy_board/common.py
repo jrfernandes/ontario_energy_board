@@ -1,4 +1,4 @@
-"""Common functions used throught various sections of the repo."""
+"""Common functions used throughout various sections of the repo."""
 
 import aiohttp
 import xml.etree.ElementTree as ET
@@ -36,6 +36,7 @@ def format_company_name(company_name, rate_class, energy_sector) -> str:
 def get_energy_sector_metadata(sector) -> str:
     """Returns the respective energy sector metadata."""
     return {
+        "name": 'Electricity' if sector == 'electricity' else 'Natural Gas',
         "xml_url": (
             ELECTRICITY_RATES_URL if sector == "electricity" else NATURAL_GAS_RATES_URL
         ),
@@ -51,16 +52,14 @@ def get_energy_sector_metadata(sector) -> str:
             ELECTRICITY_NAME_KEY if sector == "electricity" else NATURAL_GAS_NAME_KEY
         ),
         "unit_of_measure": (
-            (
-                ELECTRICITY_RATE_UNIT_OF_MEASURE
-                if sector == "electricity"
-                else NATURAL_GAS_RATE_UNIT_OF_MEASURE
-            ),
+            ELECTRICITY_RATE_UNIT_OF_MEASURE
+            if sector == "electricity"
+            else NATURAL_GAS_RATE_UNIT_OF_MEASURE
         ),
     }
 
 
-async def get_energy_companies(sort=True) -> list[str]:
+async def get_energy_companies() -> list[str]:
     """Generates a list of all energy companies available
     in the XML document including the available classes.
     """
@@ -70,7 +69,6 @@ async def get_energy_companies(sort=True) -> list[str]:
     for sector in ENERGY_SECTORS:
         content = ""
         energy_sector_metadata = get_energy_sector_metadata(sector)
-        energy_sector_companies = []
 
         async with aiohttp.ClientSession() as session:
             async with session.get(energy_sector_metadata["xml_url"]) as response:
@@ -79,7 +77,7 @@ async def get_energy_companies(sort=True) -> list[str]:
         tree = ET.fromstring(content)
 
         for company in tree.findall(energy_sector_metadata["xml_root_element"]):
-            energy_sector_companies.append(
+            all_companies.append(
                 format_company_name(
                     company.find(energy_sector_metadata["name_key"]).text,
                     company.find(energy_sector_metadata["class_key"]).text,
@@ -87,15 +85,12 @@ async def get_energy_companies(sort=True) -> list[str]:
                 )
             )
 
-        if sort:
-            energy_sector_companies.sort()
-
-        all_companies = list(set(all_companies + energy_sector_companies))
+    all_companies.sort()
 
     return all_companies
 
 
-async def get_energy_company_data(sector, company) -> dict[str, any] | None:
+async def get_energy_company_data(sector, desired_company) -> dict | None:
     """Returns the respective data for an energy company."""
 
     company_data = {}
@@ -112,10 +107,10 @@ async def get_energy_company_data(sector, company) -> dict[str, any] | None:
         current_company = format_company_name(
             company.find(energy_sector_metadata["name_key"]).text,
             company.find(energy_sector_metadata["class_key"]).text,
-            sector,
+            energy_sector_metadata['name'],
         )
 
-        if current_company == company:
+        if current_company == desired_company:
             if sector == "electricity":
                 company_data["on_peak_rate"] = float(
                     company.find(XML_KEY_ON_PEAK_RATE).text
