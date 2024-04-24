@@ -7,7 +7,7 @@
 
 This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based companies, using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
 
-![Preview](https://raw.githubusercontent.com/jrfernandes/ontario_energy_board/main/assets/sensor-preview.png)
+![Preview](assets/sensor-preview.png)
 
 
 # Installation
