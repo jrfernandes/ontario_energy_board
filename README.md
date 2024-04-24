@@ -8,7 +8,11 @@
 
 This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based energy companies (Electricity and Natural Gas), using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
 
-![Preview](assets/sensor-preview.png)
+## Electricity
+![Electricity Sensor Preview](assets/electricity-sensor-preview.png)
+
+## Natural Gas
+![Natural Gas Sensor Preview](assets/natural-gas-sensor-preview.png)
 
 
 # Installation
