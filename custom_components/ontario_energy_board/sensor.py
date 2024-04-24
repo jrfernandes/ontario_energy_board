@@ -145,23 +145,26 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> float | str:
         """Returns the current peak's rate."""
-        active_peak_rate_key = PEAK_KEY_MAPPINGS[
-            "{active_peak}_rate".format(active_peak=self.active_peak)
-        ]
 
-        if (
-            self.coordinator.energy_sector == "electricity"
-            and active_peak_rate_key in self.coordinator.company_data
-        ):
-            return self.coordinator.company_data[active_peak_rate_key]
+        company_data = self.coordinator.company_data
 
-        return 0
+        if self.coordinator.energy_sector == "electricity":
+            active_peak_mapping = PEAK_KEY_MAPPINGS.get(self.active_peak)
+
+            if active_peak_mapping is not None and active_peak_mapping in company_data:
+                return company_data[active_peak_mapping]
+
+        return company_data['gas_supply_charge']
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {
+        attributes = {
             "energy_company": self.coordinator.energy_company,
             "energy_sector": self.coordinator.energy_sector,
             "active_peak": self.active_peak,
             "season": "summer" if self.is_summer else "winter",
-        } | self.coordinator.company_data
+        }
+
+        attributes.update(self.coordinator.company_data)
+
+        return attributes
