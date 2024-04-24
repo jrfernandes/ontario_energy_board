@@ -56,7 +56,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
             company_energy_sector_search.group(1).lower().replace(" ", "_")
         )
 
-        self.company_data = get_energy_company_data(
+        self.company_data = await get_energy_company_data(
             self.energy_sector, self.energy_company
         )
 
