@@ -10,7 +10,10 @@ CONF_ULO_ENABLED = "ulo_enabled"
 ENERGY_SECTORS = ["electricity", "natural_gas"]
 
 ELECTRICITY_RATES_URL = "https://www.oeb.ca/_html/calculator/data/BillData.xml"
-NATUR_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xml"
+NATURAL_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xml"
+
+ELECTRICITY_XML_ROOT_ELEMENT = "BillDataRow"
+NATURAL_GAS_XML_ROOT_ELEMENT = "GasBillData"
 
 ELECTRICITY_RATE_UNIT_OF_MEASURE = "CA $/kWh"
 NATURAL_GAS_RATE_UNIT_OF_MEASURE = "CA ¢/m³"
@@ -50,9 +53,14 @@ XML_KEY_MAPPINGS = {
         "DRP": "distribution_rate_protection",
         "DRC": "debt_retirement_charge",
         "DRP_Rate": "distribution_rate_protection_rate",
-        "OFPR": "off_peak_rate",
-        "MPR": "mid_peak_rate",
-        "ONPR": "on_peak_rate",
+        "ULO_onp": "ultra_low_overnight_on_peak_rate",
+        "ULO_onp_period": "ultra_low_overnight_on_peak_period",
+        "ULO_weekendoffp": "ultra_low_overnight_weekend_off_peak_rate",
+        "ULO_weekendoffp_period": "ultra_low_overnight_weekend_off_peak_period",
+        "ULO_midp": "ultra_low_overnight_mid_peak_rate",
+        "ULO_midp_period": "ultra_low_overnight_mid_peak_period",
+        "ULO_overnight": "ultra_low_overnight_overnight_rate",
+        "ULO_overnight_period": "ultra_low_overnight_overnight_period",
     },
     "natural_gas": {
         "Dist": "distributor_name",
@@ -100,20 +108,34 @@ XML_KEY_MAPPINGS = {
     },
 }
 
-STATE_MID_PEAK = "mid_peak"
 STATE_ON_PEAK = "on_peak"
+STATE_MID_PEAK = "mid_peak"
 STATE_OFF_PEAK = "off_peak"
-STATE_NO_PEAK = "no_peak"
-STATE_NO_PEAK_RATE = "no_peak_rate"
-STATE_ULO_MID_PEAK = "ulo_mid_peak"
 STATE_ULO_ON_PEAK = "ulo_on_peak"
+STATE_ULO_MID_PEAK = "ulo_mid_peak"
 STATE_ULO_OFF_PEAK = "ulo_off_peak"
 STATE_ULO_OVERNIGHT = "ulo_overnight"
+STATE_NO_PEAK = "no_peak"
 
-XML_KEY_OFF_PEAK_RATE = "RPPOffP"
-XML_KEY_MID_PEAK_RATE = "RPPMidP"
+PEAK_KEY_MAPPINGS = {
+    STATE_ON_PEAK: "time_of_use_on_peak_price",
+    STATE_MID_PEAK: "time_of_use_mid_peak_price",
+    STATE_OFF_PEAK: "time_of_use_off_peak_price",
+    STATE_ULO_ON_PEAK: "ultra_low_overnight_on_peak_rate",
+    STATE_ULO_MID_PEAK: "ultra_low_overnight_mid_peak_rate",
+    STATE_ULO_OFF_PEAK: "ultra_low_overnight_weekend_off_peak_rate",
+    STATE_ULO_OVERNIGHT: "ultra_low_overnight_overnight_rate",
+}
+
 XML_KEY_ON_PEAK_RATE = "RPPOnP"
-XML_KEY_ULO_OVERNIGHT_RATE = "ULO_overnight"
-XML_KEY_ULO_OFF_PEAK_RATE = "ULO_weekendoffp"
-XML_KEY_ULO_MID_PEAK_RATE = "ULO_midp"
+XML_KEY_MID_PEAK_RATE = "RPPMidP"
+XML_KEY_OFF_PEAK_RATE = "RPPOffP"
 XML_KEY_ULO_ON_PEAK_RATE = "ULO_onp"
+XML_KEY_ULO_MID_PEAK_RATE = "ULO_midp"
+XML_KEY_ULO_OFF_PEAK_RATE = "ULO_weekendoffp"
+XML_KEY_ULO_OVERNIGHT_RATE = "ULO_overnight"
+
+ELECTRICITY_CLASS_KEY = "Class"
+NATURAL_GAS_CLASS_KEY = "SA"
+ELECTRICITY_NAME_KEY = "Dist"
+NATURAL_GAS_NAME_KEY = "Dist"

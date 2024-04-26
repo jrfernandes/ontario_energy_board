@@ -3,11 +3,16 @@
 [![Tests](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/pytest.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/pytest.yml)
 [![hacs validation](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hacs.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hacs.yml)
 [![hassfest validation](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hassfest.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/hassfest.yml)
+[![OEB Coverage](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml)
 
 
-This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based companies, using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
+This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based energy companies (Electricity and Natural Gas), using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
 
-![Preview](https://raw.githubusercontent.com/jrfernandes/ontario_energy_board/main/assets/sensor-preview.jpg)
+## Electricity
+![Electricity Sensor Preview](assets/electricity-sensor-preview.png)
+
+## Natural Gas
+![Natural Gas Sensor Preview](assets/natural-gas-sensor-preview.png)
 
 
 # Installation
@@ -30,7 +35,7 @@ Once installed, use the UI to add the new component to your setup, or click on t
 
 ### Attributes
 
-The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:
+The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro and or natural gas bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:
 
 | Attribute                                | Sector                    | OEB Key        | Unit         | Description                                                                |
 |:-----------------------------------------|:--------------------------|:---------------|:-------------|:---------------------------------------------------------------------------|

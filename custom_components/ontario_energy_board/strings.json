@@ -6,7 +6,7 @@
         "description": "Select your energy company from the list below.",
         "data": {
           "energy_company": "Energy Company",
-          "ulo_enabled": "Enable ULO rates"
+          "ulo_enabled": "Enable Ultra-Low Overnight (ULO) rates"
         }
       }
     },
