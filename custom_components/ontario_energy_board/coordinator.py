@@ -37,7 +37,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
             update_method=self._async_update_data,
         )
         self.websession = async_get_clientsession(hass)
-        self.energy_company = self.config_entry.unique_id
+        self.energy_company = self.config_entry.data[CONF_ENERGY_COMPANY]
         self.ulo_enabled = self.config_entry.data[CONF_ULO_ENABLED]
         self.ontario_holidays = holidays.Canada(prov="ON", observed=True)
 
