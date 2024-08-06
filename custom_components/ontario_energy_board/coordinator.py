@@ -40,7 +40,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         self.energy_company = self.config_entry.unique_id
         self.ulo_enabled = self.config_entry.data[CONF_ULO_ENABLED]
         self.ontario_holidays = holidays.Canada(
-            prov="ON", observed=True, categories={"public", "optional"}
+            subdiv="ON", observed=True, categories={"public", "optional"}
         )
 
     @Throttle(REFRESH_RATES_INTERVAL)
