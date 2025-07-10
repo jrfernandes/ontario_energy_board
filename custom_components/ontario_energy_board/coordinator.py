@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import Throttle
 
 from .common import get_energy_company_data
-from .const import CONF_ENERGY_COMPANY, CONF_ULO_ENABLED, DOMAIN, REFRESH_RATES_INTERVAL
+from .const import CONF_ULO_ENABLED, DOMAIN, REFRESH_RATES_INTERVAL
 
 _LOGGER: Final = logging.getLogger(__name__)
 
