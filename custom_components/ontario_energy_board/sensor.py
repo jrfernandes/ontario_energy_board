@@ -48,7 +48,7 @@ async def async_setup_entry(
             )
         )
 
-    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
+    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id, ontario_holidays)])
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
