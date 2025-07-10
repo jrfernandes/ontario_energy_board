@@ -1,6 +1,7 @@
 """Sensor integration for Ontario Energy Board."""
 
 from datetime import date
+from holidays import country_holidays
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -41,12 +42,14 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
 
-    def __init__(self, coordinator, entity_unique_id):
+    def __init__(self, coordinator, entity_unique_id, ontario_holidays) -> None:
         super().__init__(coordinator)
 
         energy_company_metadata = get_energy_sector_metadata(
             self.coordinator.energy_sector
         )
+
+        self.ontario_holidays = ontario_holidays
 
         self._attr_unique_id = entity_unique_id
         self._attr_name = f"{coordinator.energy_company} Rate"
@@ -98,7 +101,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         if is_overnight:
             return STATE_ULO_OVERNIGHT
 
-        is_holiday = current_time.date() in self.coordinator.ontario_holidays
+        is_holiday = current_time.date() in self.ontario_holidays
         is_weekend = current_time.weekday() >= 5
 
         if is_holiday or is_weekend:

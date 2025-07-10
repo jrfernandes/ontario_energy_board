@@ -4,7 +4,6 @@ import logging
 import re
 from typing import Final
 
-import holidays
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -34,9 +33,6 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
         self.websession = async_get_clientsession(hass)
         self.energy_company = self.config_entry.data[CONF_ENERGY_COMPANY]
         self.ulo_enabled = self.config_entry.data[CONF_ULO_ENABLED]
-        self.ontario_holidays = holidays.Canada(
-            subdiv="ON", observed=True, categories={"public", "optional"}
-        )
 
     @Throttle(REFRESH_RATES_INTERVAL)
     async def _async_update_data(self) -> None:
