@@ -5,33 +5,36 @@ from datetime import date
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.dt import as_local, now
 
 from .common import get_energy_sector_metadata
-
 from .const import (
     DOMAIN,
     PEAK_KEY_MAPPINGS,
-    STATE_ON_PEAK,
     STATE_MID_PEAK,
+    STATE_NO_PEAK,
     STATE_OFF_PEAK,
-    STATE_ULO_ON_PEAK,
+    STATE_ON_PEAK,
     STATE_ULO_MID_PEAK,
     STATE_ULO_OFF_PEAK,
+    STATE_ULO_ON_PEAK,
     STATE_ULO_OVERNIGHT,
-    STATE_NO_PEAK,
 )
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Ontario Energy Board sensors."""
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
+    async_add_entities(
+        [OntarioEnergyBoardSensor(coordinator, entry.unique_id, ontario_holidays)]
+    )
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
@@ -74,13 +77,11 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         if self.coordinator.ulo_enabled:
             return self.ulo_active_peak
-        else:
-            return self.tou_active_peak
+        return self.tou_active_peak
 
     @property
     def ulo_active_peak(self) -> str:
-        """
-        Find the active peak based on the current day and hour.
+        """Find the active peak based on the current day and hour.
 
         According to OEB, ULO nighttime rates apply every day. On weekends and
         holidays, daytime is off-peak. On weekdays, late afternoon and early
@@ -113,8 +114,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def tou_active_peak(self) -> str:
-        """
-        Find the active peak based on the current day and hour.
+        """Find the active peak based on the current day and hour.
 
         According to OEB, weekends and holidays are 24-hour off-peak periods.
         During summer (observed from May 1st to Oct 31st), the morning and evening
