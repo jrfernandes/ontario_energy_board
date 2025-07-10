@@ -1,18 +1,19 @@
 """Common functions used throughout various sections of the repo."""
 
 import aiohttp
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+
 from .const import (
     ELECTRICITY_CLASS_KEY,
     ELECTRICITY_NAME_KEY,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     ELECTRICITY_RATES_URL,
+    ELECTRICITY_XML_ROOT_ELEMENT,
     ENERGY_SECTORS,
     NATURAL_GAS_CLASS_KEY,
     NATURAL_GAS_NAME_KEY,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATES_URL,
-    ELECTRICITY_XML_ROOT_ELEMENT,
     NATURAL_GAS_XML_ROOT_ELEMENT,
     XML_KEY_MAPPINGS,
     XML_KEY_MID_PEAK_RATE,
@@ -26,11 +27,17 @@ from .const import (
 
 
 def format_company_name(company_name, rate_class, energy_sector) -> str:
-    return "{company_name} ({company_class}) [{company_sector}]".format(
-        company_name=company_name,
-        company_class=rate_class,
-        company_sector=energy_sector,
-    )
+    """Format the company name with rate class and energy sector.
+
+    Args:
+        company_name: The name of the company.
+        rate_class: The rate class for the company.
+        energy_sector: The energy sector (e.g., 'Electricity' or 'Natural Gas').
+
+    Returns:
+        The formatted company name string.
+    """
+    return f"{company_name} ({rate_class}) [{energy_sector}]"
 
 
 def get_energy_sector_metadata(sector) -> str:
@@ -60,8 +67,9 @@ def get_energy_sector_metadata(sector) -> str:
 
 
 async def get_energy_companies() -> list[str]:
-    """Generates a list of all energy companies available
-    in the XML document including the available classes.
+    """Generates a list of all energy companies available.
+
+    In the XML document including the available classes.
     """
 
     all_companies = []
@@ -70,20 +78,24 @@ async def get_energy_companies() -> list[str]:
         content = ""
         energy_sector_metadata = get_energy_sector_metadata(sector)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(energy_sector_metadata["xml_url"]) as response:
-                content = await response.text()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(energy_sector_metadata["xml_url"], ssl=False) as response,
+        ):
+            content = await response.text()
 
         tree = ET.fromstring(content)
 
-        for company in tree.findall(energy_sector_metadata["xml_root_element"]):
-            all_companies.append(
+        all_companies.extend(
+            [
                 format_company_name(
                     company.find(energy_sector_metadata["name_key"]).text,
                     company.find(energy_sector_metadata["class_key"]).text,
                     sector.replace("_", " ").title(),
                 )
-            )
+                for company in tree.findall(energy_sector_metadata["xml_root_element"])
+            ]
+        )
 
     all_companies.sort()
 
@@ -97,9 +109,11 @@ async def get_energy_company_data(sector, desired_company) -> dict | None:
     content = ""
     energy_sector_metadata = get_energy_sector_metadata(sector)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(energy_sector_metadata["xml_url"]) as response:
-            content = await response.text()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(energy_sector_metadata["xml_url"], ssl=False) as response,
+    ):
+        content = await response.text()
 
     tree = ET.fromstring(content)
 

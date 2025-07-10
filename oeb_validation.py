@@ -7,11 +7,11 @@ from custom_components.ontario_energy_board.const import (
     XML_KEY_MAPPINGS,
 )
 import requests
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 # Grab OEB data
-electricity_data = requests.get(ELECTRICITY_RATES_URL)
-natural_gas_data = requests.get(NATURAL_GAS_RATES_URL)
+electricity_data = requests.get(ELECTRICITY_RATES_URL, verify=False)
+natural_gas_data = requests.get(NATURAL_GAS_RATES_URL, verify=False)
 
 # Parse the XML
 electricity_data_tree = ET.fromstring(electricity_data.content)

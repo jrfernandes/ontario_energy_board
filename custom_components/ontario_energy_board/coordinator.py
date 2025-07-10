@@ -11,12 +11,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import Throttle
 
 from .common import get_energy_company_data
-
-from .const import (
-    DOMAIN,
-    CONF_ULO_ENABLED,
-    REFRESH_RATES_INTERVAL,
-)
+from .const import CONF_ULO_ENABLED, DOMAIN, REFRESH_RATES_INTERVAL
 
 _LOGGER: Final = logging.getLogger(__name__)
 
@@ -45,9 +40,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
 
     @Throttle(REFRESH_RATES_INTERVAL)
     async def _async_update_data(self) -> None:
-        """Parses the official XML document extracting the rates for
-        the selected energy company.
-        """
+        """Parses the official XML document extracting the rates for the selected energy company."""
 
         self.company_data = {}
 
