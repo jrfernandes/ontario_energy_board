@@ -1,7 +1,8 @@
 """Common functions used throughout various sections of the repo."""
 
 import aiohttp
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+
 from .const import (
     ELECTRICITY_CLASS_KEY,
     ELECTRICITY_NAME_KEY,
