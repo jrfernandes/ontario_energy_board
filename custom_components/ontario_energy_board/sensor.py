@@ -32,9 +32,7 @@ async def async_setup_entry(
     """Set up the Ontario Energy Board sensors."""
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [OntarioEnergyBoardSensor(coordinator, entry.unique_id, ontario_holidays)]
-    )
+    async_add_entities([OntarioEnergyBoardSensor(coordinator, entry.unique_id)])
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
