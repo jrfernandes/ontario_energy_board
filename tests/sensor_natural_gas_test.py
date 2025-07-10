@@ -16,7 +16,7 @@ def mock_coordinator():
 
 @pytest.fixture
 def sensor(mock_coordinator):
-    return OntarioEnergyBoardSensor(mock_coordinator, TESTING_ENTITY_ID)
+    return OntarioEnergyBoardSensor(mock_coordinator, TESTING_ENTITY_ID, None)
 
 
 @pytest.mark.parametrize(

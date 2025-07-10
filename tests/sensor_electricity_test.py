@@ -108,7 +108,7 @@ def mock_coordinator():
 
 @pytest.fixture
 def sensor(mock_coordinator):
-    return OntarioEnergyBoardSensor(mock_coordinator, TESTING_ENTITY_ID)
+    return OntarioEnergyBoardSensor(mock_coordinator, TESTING_ENTITY_ID, None)
 
 
 @pytest.mark.parametrize(
@@ -138,8 +138,8 @@ def test_tou_active_peak(
             "custom_components.ontario_energy_board.sensor.as_local",
             return_value=test_date.replace(hour=test_hour),
         ):
-            with patch.object(sensor.coordinator, "ontario_holidays", ontario_holidays):
-                assert sensor.tou_active_peak == expected_peak_state
+            sensor.ontario_holidays = ontario_holidays
+            assert sensor.tou_active_peak == expected_peak_state
 
 
 @pytest.mark.parametrize(
@@ -154,8 +154,8 @@ def test_ulo_active_peak(
             "custom_components.ontario_energy_board.sensor.as_local",
             return_value=test_date.replace(hour=test_hour),
         ):
-            with patch.object(sensor.coordinator, "ontario_holidays", ontario_holidays):
-                assert sensor.ulo_active_peak == expected_peak_state
+            sensor.ontario_holidays = ontario_holidays
+            assert sensor.ulo_active_peak == expected_peak_state
 
 
 @pytest.mark.parametrize(
@@ -170,9 +170,9 @@ def test_active_peak_tou(
             "custom_components.ontario_energy_board.sensor.as_local",
             return_value=test_date.replace(hour=test_hour),
         ):
-            with patch.object(sensor.coordinator, "ontario_holidays", ontario_holidays):
-                with patch.object(sensor.coordinator, "ulo_enabled", False):
-                    assert sensor.active_peak == expected_peak_state
+            sensor.ontario_holidays = ontario_holidays
+            with patch.object(sensor.coordinator, "ulo_enabled", False):
+                assert sensor.active_peak == expected_peak_state
 
 
 @pytest.mark.parametrize(
@@ -187,6 +187,6 @@ def test_active_peak_ulo(
             "custom_components.ontario_energy_board.sensor.as_local",
             return_value=test_date.replace(hour=test_hour),
         ):
-            with patch.object(sensor.coordinator, "ontario_holidays", ontario_holidays):
-                with patch.object(sensor.coordinator, "ulo_enabled", True):
-                    assert sensor.active_peak == expected_peak_state
+            sensor.ontario_holidays = ontario_holidays
+            with patch.object(sensor.coordinator, "ulo_enabled", True):
+                assert sensor.active_peak == expected_peak_state
