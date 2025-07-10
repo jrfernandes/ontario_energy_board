@@ -71,9 +71,11 @@ async def get_energy_companies() -> list[str]:
         content = ""
         energy_sector_metadata = get_energy_sector_metadata(sector)
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(energy_sector_metadata["xml_url"]) as response:
-                content = await response.text()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(energy_sector_metadata["xml_url"], ssl=False) as response,
+        ):
+            content = await response.text()
 
         tree = ET.fromstring(content)
 
@@ -98,9 +100,11 @@ async def get_energy_company_data(sector, desired_company) -> dict | None:
     content = ""
     energy_sector_metadata = get_energy_sector_metadata(sector)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(energy_sector_metadata["xml_url"]) as response:
-            content = await response.text()
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(energy_sector_metadata["xml_url"], ssl=False) as response,
+    ):
+        content = await response.text()
 
     tree = ET.fromstring(content)
 
