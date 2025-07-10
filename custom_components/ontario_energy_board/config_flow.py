@@ -30,6 +30,9 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             energy_company = user_input[CONF_ENERGY_COMPANY]
             ulo_enabled = user_input[CONF_ULO_ENABLED]
 
+            await self.async_set_unique_id(f"{energy_company} {ulo_enabled}")
+            self._abort_if_unique_id_configured()
+
             return self.async_create_entry(
                 title=energy_company,
                 data={
