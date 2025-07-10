@@ -8,8 +8,8 @@
 	"issue_tracker": "https://github.com/jrfernandes/ontario_energy_board/issues",
 	"requirements": [
 		"beautifulsoup4==4.12.3",
-		"holidays>=0.46",
 		"defusedxml>=0.7.1",
+		"holidays>=0.76",
 		"hijri_converter>=2.3.1"
 	],
 	"version": "0.4.1"
