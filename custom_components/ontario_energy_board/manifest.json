@@ -12,5 +12,5 @@
 		"holidays>=0.76",
 		"hijri_converter>=2.3.1"
 	],
-	"version": "0.4.1"
+	"version": "0.5.0"
 }
