@@ -3,7 +3,10 @@
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
 
-  "python.testing.pytestArgs": ["tests"],
+  // pytest.ini turns coverage on for terminal and CI runs. Coverage tracing
+  // stops the debugger from hitting breakpoints, so it is switched off for
+  // runs started from the IDE.
+  "python.testing.pytestArgs": ["tests", "--no-cov"],
 
   // ---- Formatting and linting --------------------------------------------
   // ruff replaces black and flake8; it is configured in pyproject.toml.

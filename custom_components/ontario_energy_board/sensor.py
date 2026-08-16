@@ -76,26 +76,6 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         return peaks.is_summer(as_local(now()))
 
     @property
-    def ulo_active_peak(self) -> str:
-        """The active peak under the Ultra-Low Overnight plan."""
-        return peaks.active_peak(
-            as_local(now()),
-            self.ontario_holidays,
-            energy_sector=self.coordinator.energy_sector,
-            ulo_enabled=True,
-        )
-
-    @property
-    def tou_active_peak(self) -> str:
-        """The active peak under the Time-of-Use plan."""
-        return peaks.active_peak(
-            as_local(now()),
-            self.ontario_holidays,
-            energy_sector=self.coordinator.energy_sector,
-            ulo_enabled=False,
-        )
-
-    @property
     def active_peak(self) -> str:
         """The active peak under the plan this entry is configured for."""
         return peaks.active_peak(
