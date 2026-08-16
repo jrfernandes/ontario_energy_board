@@ -105,7 +105,9 @@ ULTRA_LOW_OVERNIGHT_SCENARIOS = [
 
 @pytest.fixture
 def mock_coordinator():
-    return Mock()
+    coordinator = Mock()
+    coordinator.energy_sector = "electricity"
+    return coordinator
 
 
 @pytest.fixture

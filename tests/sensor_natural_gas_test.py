@@ -13,7 +13,9 @@ TESTING_ENTITY_ID = "Union Gas (South) [Natural Gas]"
 
 @pytest.fixture
 def mock_coordinator():
-    return Mock()
+    coordinator = Mock()
+    coordinator.energy_sector = "natural_gas"
+    return coordinator
 
 
 @pytest.fixture

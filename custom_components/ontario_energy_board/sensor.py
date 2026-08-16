@@ -1,6 +1,5 @@
 """Sensor integration for Ontario Energy Board."""
 
-from datetime import date
 from functools import partial
 
 from holidays import country_holidays
@@ -12,19 +11,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.setup import SetupPhases, async_pause_setup
 from homeassistant.util.dt import as_local, now
 
+from . import peaks
 from .common import get_energy_sector_metadata
-from .const import (
-    DOMAIN,
-    PEAK_KEY_MAPPINGS,
-    STATE_MID_PEAK,
-    STATE_NO_PEAK,
-    STATE_OFF_PEAK,
-    STATE_ON_PEAK,
-    STATE_ULO_MID_PEAK,
-    STATE_ULO_OFF_PEAK,
-    STATE_ULO_ON_PEAK,
-    STATE_ULO_OVERNIGHT,
-)
+from .const import DOMAIN, PEAK_KEY_MAPPINGS, SECTOR_ELECTRICITY
 
 
 async def async_setup_entry(
@@ -36,6 +25,8 @@ async def async_setup_entry(
 
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
+    # Importing `holidays` builds its data tables and is slow enough to block
+    # the event loop, so it is pushed to the import executor.
     with async_pause_setup(hass, SetupPhases.WAIT_IMPORT_PACKAGES):
         ontario_holidays = await hass.async_add_import_executor_job(
             partial(
@@ -53,7 +44,12 @@ async def async_setup_entry(
 
 
 class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
-    """Sensor object for Ontario Energy Board."""
+    """Sensor object for Ontario Energy Board.
+
+    The peak rules themselves live in `peaks`, which knows nothing about Home
+    Assistant. This class only supplies the current moment and the coordinator's
+    configuration to them.
+    """
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
@@ -61,9 +57,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, entity_unique_id, ontario_holidays) -> None:
         super().__init__(coordinator)
 
-        energy_company_metadata = get_energy_sector_metadata(
-            self.coordinator.energy_sector
-        )
+        energy_company_metadata = get_energy_sector_metadata(coordinator.energy_sector)
 
         self.ontario_holidays = ontario_holidays
 
@@ -79,85 +73,37 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def is_summer(self) -> bool:
-        current_time = as_local(now())
+        return peaks.is_summer(as_local(now()))
 
-        return (
-            date(current_time.year, 5, 1)
-            <= current_time.date()
-            <= date(current_time.year, 10, 31)
+    @property
+    def ulo_active_peak(self) -> str:
+        """The active peak under the Ultra-Low Overnight plan."""
+        return peaks.active_peak(
+            as_local(now()),
+            self.ontario_holidays,
+            energy_sector=self.coordinator.energy_sector,
+            ulo_enabled=True,
+        )
+
+    @property
+    def tou_active_peak(self) -> str:
+        """The active peak under the Time-of-Use plan."""
+        return peaks.active_peak(
+            as_local(now()),
+            self.ontario_holidays,
+            energy_sector=self.coordinator.energy_sector,
+            ulo_enabled=False,
         )
 
     @property
     def active_peak(self) -> str:
-        if self.coordinator.energy_sector == "natural_gas":
-            return STATE_NO_PEAK
-
-        if self.coordinator.ulo_enabled:
-            return self.ulo_active_peak
-        return self.tou_active_peak
-
-    @property
-    def ulo_active_peak(self) -> str:
-        """Find the active peak based on the current day and hour.
-
-        According to OEB, ULO nighttime rates apply every day. On weekends and
-        holidays, daytime is off-peak. On weekdays, late afternoon and early
-        evening is on-peak. The rest is mid-peak.
-
-        ULO prices and periods are the same all year round.
-        """
-
-        if self.coordinator.energy_sector == "natural_gas":
-            return STATE_NO_PEAK
-
-        current_time = as_local(now())
-        current_hour = int(current_time.strftime("%H"))
-
-        is_overnight = current_hour < 7 or current_hour >= 23
-        if is_overnight:
-            return STATE_ULO_OVERNIGHT
-
-        is_holiday = current_time.date() in self.ontario_holidays
-        is_weekend = current_time.weekday() >= 5
-
-        if is_holiday or is_weekend:
-            return STATE_ULO_OFF_PEAK
-
-        is_on_peak = 16 <= current_hour < 21
-        if is_on_peak:
-            return STATE_ULO_ON_PEAK
-
-        return STATE_ULO_MID_PEAK
-
-    @property
-    def tou_active_peak(self) -> str:
-        """Find the active peak based on the current day and hour.
-
-        According to OEB, weekends and holidays are 24-hour off-peak periods.
-        During summer (observed from May 1st to Oct 31st), the morning and evening
-        periods are mid-peak, and the afternoon is on-peak. This flips during winter
-        time, where morning and evening are on-peak and afternoons are mid-peak.
-        """
-
-        if self.coordinator.energy_sector == "natural_gas":
-            return STATE_NO_PEAK
-
-        current_time = as_local(now())
-
-        is_holiday = current_time.date() in self.ontario_holidays
-        is_weekend = current_time.weekday() >= 5
-
-        if is_holiday or is_weekend:
-            return STATE_OFF_PEAK
-
-        current_hour = int(current_time.strftime("%H"))
-
-        if (7 <= current_hour < 11) or (17 <= current_hour < 19):
-            return STATE_MID_PEAK if self.is_summer else STATE_ON_PEAK
-        if 11 <= current_hour < 17:
-            return STATE_ON_PEAK if self.is_summer else STATE_MID_PEAK
-
-        return STATE_OFF_PEAK
+        """The active peak under the plan this entry is configured for."""
+        return peaks.active_peak(
+            as_local(now()),
+            self.ontario_holidays,
+            energy_sector=self.coordinator.energy_sector,
+            ulo_enabled=self.coordinator.ulo_enabled,
+        )
 
     @property
     def native_value(self) -> float | str:
@@ -165,7 +111,7 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
         company_data = self.coordinator.company_data
 
-        if self.coordinator.energy_sector == "electricity":
+        if self.coordinator.energy_sector == SECTOR_ELECTRICITY:
             active_peak_mapping = PEAK_KEY_MAPPINGS.get(self.active_peak)
 
             if active_peak_mapping is not None and active_peak_mapping in company_data:
