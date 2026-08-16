@@ -1,6 +1,8 @@
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
+
 from custom_components.ontario_energy_board.const import (
     STATE_NO_PEAK,
 )

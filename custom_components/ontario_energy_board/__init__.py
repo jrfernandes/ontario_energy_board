@@ -1,13 +1,13 @@
 """The Ontario Energy Board component."""
 
-from typing import Final
 import logging
+from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_ULO_ENABLED
+from .const import CONF_ULO_ENABLED, DOMAIN
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
 _LOGGER: Final = logging.getLogger(__name__)

@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Starts a real Home Assistant on http://localhost:8123 with this
+      // integration loaded, under the debugger. Breakpoints in
+      // custom_components/ontario_energy_board are hit live.
+      "name": "Home Assistant",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "homeassistant",
+      "args": ["--config", "dev-config", "--debug"],
+      "console": "integratedTerminal",
+      // Home Assistant's own frames are needed to follow a config flow or a
+      // coordinator refresh into the integration.
+      "justMyCode": false,
+      "preLaunchTask": "Prepare dev-config",
+      "python": "${command:python.interpreterPath}",
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    },
+    {
+      // Debug only the test file that is currently open.
+      "name": "Pytest: current file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-vv"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "python": "${command:python.interpreterPath}"
+    },
+    {
+      // Debug the whole suite.
+      "name": "Pytest: all tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "python": "${command:python.interpreterPath}"
+    }
+  ]
+}

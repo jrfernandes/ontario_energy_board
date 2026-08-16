@@ -1,0 +1,28 @@
+{
+  "name": "Ontario Energy Board",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14-bookworm",
+  "postCreateCommand": "scripts/setup",
+  "forwardPorts": [8123],
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "files.associations": {
+          "scripts/*": "shellscript"
+        }
+      }
+    }
+  }
+}

@@ -33,6 +33,70 @@ Once installed, use the UI to add the new component to your setup, or click on t
 [![AA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start?domain=ontario_energy_board)
 
 
+# Development
+
+## Setup
+
+```bash
+scripts/setup
+```
+
+Creates a `.venv` and installs everything from `ci_requirements.txt`.
+
+There is also a devcontainer (`.devcontainer/devcontainer.json`) if you prefer a
+container — it runs `scripts/setup` on create and forwards port 8123.
+
+## Running a real Home Assistant
+
+```bash
+scripts/develop
+```
+
+Starts Home Assistant on <http://localhost:8123> with this integration
+symlinked into a generated, git-ignored `dev-config/` directory — no copying
+required, and edits are picked up on restart. On first run, create a throwaway
+account, then add the integration from **Settings → Devices & Services → Add
+Integration → Ontario Energy Board**.
+
+Delete `dev-config/` to start from a clean instance.
+
+## Running the tests
+
+```bash
+scripts/test            # everything
+scripts/test -k peak    # a subset
+```
+
+## Formatting and linting
+
+[ruff](https://docs.astral.sh/ruff/) handles formatting, linting and import
+sorting, configured in `pyproject.toml`.
+
+```bash
+scripts/lint            # format, then fix what can be fixed automatically
+scripts/lint --check    # report only, as CI runs it
+```
+
+## VS Code
+
+The workspace is preconfigured (`.vscode/`). Run **Setup** once, then reload so
+the Python extension picks up `.venv` (or select it via *Python: Select
+Interpreter*).
+
+- **Testing sidebar** — the suite appears in the Test Explorer; run or debug any
+  individual test from the gutter.
+- **Run and Debug → Home Assistant** — starts a real instance on
+  <http://localhost:8123> under the debugger, with breakpoints live in
+  `custom_components/ontario_energy_board`. It seeds `dev-config/` first via a
+  pre-launch task. `justMyCode` is off so you can step from a config flow or a
+  coordinator refresh into the integration.
+- **Tasks** (`Terminal → Run Task`) — *Setup*, *Test*, *Lint*, *Run Home
+  Assistant* (no debugger), *Validate OEB data coverage*.
+
+Note that `.vscode/` is git-ignored apart from the four shared workspace files,
+so personal editor state stays out of the repo.
+
+
 ### Attributes
 
 The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro and or natural gas bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Format and lint with ruff.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+PYTHON="${PYTHON:-python3}"
+if [ -z "${VIRTUAL_ENV:-}" ] && [ -x .venv/bin/python ]; then
+    PYTHON=".venv/bin/python"
+fi
+
+if [ "${1:-}" = "--check" ]; then
+    # What CI runs: report problems without changing anything.
+    "$PYTHON" -m ruff format --check .
+    "$PYTHON" -m ruff check .
+else
+    "$PYTHON" -m ruff format .
+    "$PYTHON" -m ruff check --fix .
+fi

@@ -14,15 +14,15 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.14"
 
       - name: install python packages
         run: |
           python -m pip install --upgrade pip
           pip install -r ci_requirements.txt
 
-      - name: Flake8
-        run: flake8 .
+      - name: Ruff format
+        run: ruff format --check .
 
-      - name: Black
-        run: black --check .
+      - name: Ruff check
+        run: ruff check --output-format=github .

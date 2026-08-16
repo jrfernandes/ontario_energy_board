@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Run a throwaway Home Assistant instance with this integration loaded.
+#
+# The integration is symlinked rather than copied, so edits are picked up on
+# the next restart with no copy/paste step. The generated dev-config/ directory
+# is git-ignored; delete it to start from a clean instance.
+#
+# Pass --prepare-only to create dev-config/ without starting Home Assistant.
+# The VS Code "Home Assistant" launch configuration uses this so the debugger
+# owns the process itself.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+PREPARE_ONLY=false
+if [ "${1:-}" = "--prepare-only" ]; then
+    PREPARE_ONLY=true
+fi
+
+PYTHON="${PYTHON:-python3}"
+if [ -z "${VIRTUAL_ENV:-}" ] && [ -x .venv/bin/python ]; then
+    PYTHON=".venv/bin/python"
+fi
+
+CONFIG_DIR="${CONFIG_DIR:-dev-config}"
+
+mkdir -p "$CONFIG_DIR/custom_components"
+ln -sfn "$PWD/custom_components/ontario_energy_board" \
+    "$CONFIG_DIR/custom_components/ontario_energy_board"
+
+if [ ! -f "$CONFIG_DIR/configuration.yaml" ]; then
+    echo "Seeding $CONFIG_DIR/configuration.yaml"
+    cat >"$CONFIG_DIR/configuration.yaml" <<'YAML'
+# Minimal Home Assistant configuration for developing this integration.
+homeassistant:
+  # The peak schedule is defined in Ontario local time.
+  time_zone: America/Toronto
+
+# Serves the UI and the "Add integration" flow.
+frontend:
+config:
+
+logger:
+  default: warning
+  logs:
+    custom_components.ontario_energy_board: debug
+YAML
+fi
+
+if [ "$PREPARE_ONLY" = true ]; then
+    echo "$CONFIG_DIR is ready."
+    exit 0
+fi
+
+echo "Home Assistant will be available at http://localhost:8123"
+echo "On first run, create a throwaway account, then add the integration from"
+echo "Settings > Devices & Services > Add Integration > Ontario Energy Board."
+echo
+
+exec "$PYTHON" -m homeassistant --config "$CONFIG_DIR" --debug
