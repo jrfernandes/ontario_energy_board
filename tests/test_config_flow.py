@@ -1,5 +1,6 @@
 """Tests for the Ontario Energy Board config flow."""
 
+import aiohttp
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -7,6 +8,7 @@ from custom_components.ontario_energy_board.const import (
     CONF_ENERGY_COMPANY,
     CONF_ULO_ENABLED,
     DOMAIN,
+    ELECTRICITY_RATES_URL,
 )
 
 from .conftest import ELECTRICITY_COMPANY, NATURAL_GAS_COMPANY, build_config_entry
@@ -79,3 +81,16 @@ async def test_duplicate_entry_is_rejected(hass, mock_oeb, enable_custom_integra
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_aborts_when_oeb_is_unreachable(
+    hass, aioclient_mock, enable_custom_integrations
+):
+    aioclient_mock.get(ELECTRICITY_RATES_URL, exc=aiohttp.ClientError)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "cannot_connect"
