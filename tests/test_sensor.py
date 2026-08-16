@@ -166,3 +166,22 @@ async def test_utc_instant_is_interpreted_in_ontario_time(hass, init_integration
         # 12:00 EST on a winter weekday is mid-peak. If UTC leaked through, the
         # hour would read as 17 and the state would be on-peak.
         assert state.attributes["active_peak"] == STATE_MID_PEAK
+
+
+async def test_platform_uses_the_declared_scan_interval(hass, init_integration):
+    """SCAN_INTERVAL only takes effect if it is a name on the platform module.
+
+    Home Assistant reads it with getattr(platform, "SCAN_INTERVAL", None), so
+    declaring it in const alone leaves the platform on the sensor default.
+    """
+    from homeassistant.helpers.entity_platform import async_get_platforms
+
+    from custom_components.ontario_energy_board.const import DOMAIN, SCAN_INTERVAL
+
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(ELECTRICITY_COMPANY)
+
+    platforms = async_get_platforms(hass, DOMAIN)
+
+    assert platforms
+    assert all(platform.scan_interval == SCAN_INTERVAL for platform in platforms)

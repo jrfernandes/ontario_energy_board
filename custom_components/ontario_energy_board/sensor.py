@@ -13,7 +13,13 @@ from homeassistant.util.dt import as_local, now
 
 from . import peaks
 from .common import get_energy_sector_metadata
-from .const import DOMAIN, PEAK_KEY_MAPPINGS, SECTOR_ELECTRICITY
+from .const import DOMAIN, PEAK_KEY_MAPPINGS, SCAN_INTERVAL, SECTOR_ELECTRICITY
+
+# Home Assistant reads SCAN_INTERVAL off the platform module itself, so it has
+# to be a name here and not only in const. The active peak changes with the
+# clock rather than with new data, which is why this entity polls far more
+# often than the coordinator refreshes.
+__all__ = ["SCAN_INTERVAL", "async_setup_entry"]
 
 
 async def async_setup_entry(
@@ -53,6 +59,8 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_icon = "mdi:cash-multiple"
+    # The state depends on the wall clock, not only on coordinator updates.
+    _attr_should_poll = True
 
     def __init__(self, coordinator, entity_unique_id, ontario_holidays) -> None:
         super().__init__(coordinator)
@@ -66,10 +74,6 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = energy_company_metadata[
             "unit_of_measure"
         ]
-
-    @property
-    def should_poll(self) -> bool:
-        return True
 
     @property
     def is_summer(self) -> bool:
