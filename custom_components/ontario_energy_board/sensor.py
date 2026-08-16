@@ -86,18 +86,24 @@ class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def native_value(self) -> float | str:
-        """Returns the current peak's rate for electricity companies or the gas supply charge for natural gas companies."""
+    def native_value(self) -> float | str | None:
+        """The current peak's rate, or the gas supply charge for natural gas.
+
+        Returns None rather than raising when the rate is absent, so a partial
+        or missing document surfaces as an unknown state.
+        """
 
         company_data = self.coordinator.company_data
 
         if self.coordinator.energy_sector == SECTOR_ELECTRICITY:
             active_peak_mapping = PEAK_KEY_MAPPINGS.get(self.active_peak)
 
-            if active_peak_mapping is not None and active_peak_mapping in company_data:
-                return company_data[active_peak_mapping]
+            if active_peak_mapping is None:
+                return None
 
-        return company_data["gas_supply_charge"]
+            return company_data.get(active_peak_mapping)
+
+        return company_data.get("gas_supply_charge")
 
     @property
     def extra_state_attributes(self) -> dict:

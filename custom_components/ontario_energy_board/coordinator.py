@@ -6,7 +6,7 @@ from typing import Final
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import Throttle
 
 from .common import energy_sector_from_company_name, get_energy_company_data
@@ -41,11 +41,11 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> None:
         """Fetch the rates for the selected energy company."""
 
-        self.company_data = await get_energy_company_data(
+        company_data = await get_energy_company_data(
             self.websession, self.energy_sector, self.energy_company
         )
 
-        if self.company_data is not None:
-            return
+        if company_data is None:
+            raise UpdateFailed(f"Could not find energy rates for {self.energy_company}")
 
-        self.logger.error("Could not find energy rates for %s", self.energy_company)
+        self.company_data = company_data

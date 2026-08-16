@@ -72,3 +72,15 @@ async def test_migration_from_version_1(
     assert entry.version == 2
     assert entry.data[CONF_ULO_ENABLED] is False
     assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_setup_retries_when_company_is_missing(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """A company that vanished from the OEB feed must not silently load."""
+    entry = build_config_entry("Utility That Left The Feed (RESIDENTIAL) [Electricity]")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
