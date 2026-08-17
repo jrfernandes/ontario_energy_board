@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "redhat.vscode-yaml"
+  ],
+  "unwantedRecommendations": [
+    // ruff handles formatting, linting and import sorting. Running any of
+    // these alongside it produces conflicting edits on save.
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort"
+  ]
+}

@@ -33,6 +33,107 @@ Once installed, use the UI to add the new component to your setup, or click on t
 [![AA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start?domain=ontario_energy_board)
 
 
+# Development
+
+## Setup
+
+```bash
+scripts/setup
+```
+
+Creates a `.venv` and installs everything from `ci_requirements.txt`.
+
+There is also a devcontainer (`.devcontainer/devcontainer.json`) if you prefer a
+container — it runs `scripts/setup` on create and forwards port 8123.
+
+## Running a real Home Assistant
+
+```bash
+scripts/develop
+```
+
+Starts Home Assistant on <http://localhost:8123> with this integration
+symlinked into a generated, git-ignored `dev-config/` directory — no copying
+required, and edits are picked up on restart. On first run, create a throwaway
+account, then add the integration from **Settings → Devices & Services → Add
+Integration → Ontario Energy Board**.
+
+Delete `dev-config/` to start from a clean instance.
+
+## Running the tests
+
+```bash
+scripts/test                            # everything
+scripts/test tests/test_peaks.py -q     # just the peak rules
+```
+
+The suite runs against a real (in-process) Home Assistant instance, so no
+separate HA install is needed. Every OEB request is served from the trimmed
+snapshots in `tests/fixtures/`, and `pytest-socket` blocks real network access,
+so a missing mock fails loudly rather than silently hitting the live feed.
+
+Layout:
+
+| File | Covers |
+|:--|:--|
+| `tests/test_peaks.py` | The peak rules as pure functions — no Home Assistant, runs in milliseconds |
+| `tests/test_common.py` | Parsing the OEB documents, and resolving the sector from a company name |
+| `tests/test_config_flow.py` | The company picker and duplicate handling |
+| `tests/test_init.py` | Setup, unload, retry on failure, and config entry migration |
+| `tests/test_sensor.py` | The entity end to end, with time frozen in `America/Toronto` |
+
+## Refreshing the test fixtures
+
+`tests/fixtures/` holds trimmed snapshots of the two OEB feeds. Re-capture them
+when the upstream schema changes:
+
+```bash
+curl -k -o tests/fixtures/GasBillData.xml https://www.oeb.ca/_html/calculator/data/GasBillData.xml
+```
+
+The electricity document is trimmed to a handful of rate classes to keep it
+readable; take the same shape when refreshing it.
+
+## Adding a new OEB data point
+
+1. Add the XML key to `XML_KEY_MAPPINGS` in `const.py`.
+2. Add a row to the attribute table below.
+
+`oeb_validation.py` runs nightly in CI against the live feeds and fails if the
+two ever drift apart, so a new upstream field shows up as a red build without
+anyone needing to push a commit.
+
+## Formatting and linting
+
+[ruff](https://docs.astral.sh/ruff/) handles formatting, linting and import
+sorting, configured in `pyproject.toml`.
+
+```bash
+scripts/lint            # format, then fix what can be fixed automatically
+scripts/lint --check    # report only, as CI runs it
+```
+
+## VS Code
+
+The workspace is preconfigured (`.vscode/`). Run **Setup** once, then reload so
+the Python extension picks up `.venv` (or select it via *Python: Select
+Interpreter*).
+
+- **Testing sidebar** — the suite appears in the Test Explorer; run or debug any
+  individual test from the gutter. IDE runs pass `--no-cov`, because coverage
+  tracing prevents the debugger from hitting breakpoints.
+- **Run and Debug → Home Assistant** — starts a real instance on
+  <http://localhost:8123> under the debugger, with breakpoints live in
+  `custom_components/ontario_energy_board`. It seeds `dev-config/` first via a
+  pre-launch task. `justMyCode` is off so you can step from a config flow or a
+  coordinator refresh into the integration.
+- **Tasks** (`Terminal → Run Task`) — *Setup*, *Test*, *Lint*, *Run Home
+  Assistant* (no debugger), *Validate OEB data coverage*.
+
+Note that `.vscode/` is git-ignored apart from the four shared workspace files,
+so personal editor state stays out of the repo.
+
+
 ### Attributes
 
 The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro and or natural gas bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:

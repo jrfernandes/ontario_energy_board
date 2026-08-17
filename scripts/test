@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Run the test suite. Any arguments are passed through to pytest.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+PYTHON="${PYTHON:-python3}"
+if [ -z "${VIRTUAL_ENV:-}" ] && [ -x .venv/bin/python ]; then
+    PYTHON=".venv/bin/python"
+fi
+
+exec "$PYTHON" -m pytest "$@"

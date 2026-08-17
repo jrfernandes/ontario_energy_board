@@ -1,11 +1,17 @@
 """Config flow for Ontario Energy Board integration."""
 
-import voluptuous as vol
+import logging
+from typing import Final
 
+import aiohttp
 from homeassistant import config_entries
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
 from .common import get_energy_companies
 from .const import CONF_ENERGY_COMPANY, CONF_ULO_ENABLED, DOMAIN
+
+_LOGGER: Final = logging.getLogger(__name__)
 
 
 class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -24,7 +30,13 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         Returns:
             ConfigFlowResult: The result of the config flow step.
         """
-        companies_list = await get_energy_companies()
+        try:
+            companies_list = await get_energy_companies(
+                async_get_clientsession(self.hass)
+            )
+        except (aiohttp.ClientError, TimeoutError):
+            _LOGGER.exception("Failed to download the energy rates documents")
+            return self.async_abort(reason="cannot_connect")
 
         if user_input is not None:
             energy_company = user_input[CONF_ENERGY_COMPANY]

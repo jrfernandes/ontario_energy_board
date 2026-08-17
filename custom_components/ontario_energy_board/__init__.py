@@ -1,13 +1,13 @@
 """The Ontario Energy Board component."""
 
-from typing import Final
 import logging
+from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_ULO_ENABLED
+from .const import CONF_ULO_ENABLED, DOMAIN
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     """Set up the Ontario Energy Board component."""
     hass.data.setdefault(DOMAIN, {})
 
-    coordinator = OntarioEnergyBoardDataUpdateCoordinator(hass)
+    coordinator = OntarioEnergyBoardDataUpdateCoordinator(hass, config_entry)
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -32,8 +32,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_forward_entry_unload(
-        config_entry, Platform.SENSOR
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        config_entry, PLATFORMS
     )
 
     if unload_ok:

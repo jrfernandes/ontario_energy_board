@@ -1,9 +1,16 @@
-defusedxml==0.7.1
+# Development and CI dependencies.
+#
+# pytest-homeassistant-custom-component pins the Home Assistant version the
+# tests run against, along with pytest and its plugins (including freezegun and
+# pytest-socket). Bump this one line to test against a newer Home Assistant.
+pytest-homeassistant-custom-component==0.13.356
+
+# Runtime requirements, mirrored from manifest.json.
+defusedxml>=0.7.1
+holidays>=0.76
+
+# Used by oeb_validation.py.
 requests
-homeassistant
-holidays
-pytest
-pytest-asyncio
-pytest-mock
-black
-flake8
+
+# Formatting and linting, configured in pyproject.toml.
+ruff==0.16.3
