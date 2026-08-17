@@ -213,15 +213,29 @@ async def test_only_clock_dependent_entities_poll(hass, init_integration):
     with freeze_time(ontario_moment(2024, 1, 15, 12)):
         await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
 
-    platforms = async_get_platforms(hass, DOMAIN)
+    sensor_platforms = [
+        platform
+        for platform in async_get_platforms(hass, DOMAIN)
+        if platform.domain == "sensor"
+    ]
 
-    assert platforms
-    assert all(platform.scan_interval == SCAN_INTERVAL for platform in platforms)
+    assert sensor_platforms
+    assert all(p.scan_interval == SCAN_INTERVAL for p in sensor_platforms)
 
-    entities = [e for platform in platforms for e in platform.entities.values()]
+    entities = [e for p in sensor_platforms for e in p.entities.values()]
     polling = {e.entity_description.key for e in entities if e.should_poll}
 
     assert polling == {"current_rate", "active_peak", "season"}
+
+    # The binary sensor tracks a flag that changes at most daily, so it has no
+    # reason to poll; it updates when the coordinator refreshes.
+    other = [
+        e
+        for platform in async_get_platforms(hass, DOMAIN)
+        if platform.domain != "sensor"
+        for e in platform.entities.values()
+    ]
+    assert not any(e.should_poll for e in other)
 
 
 def _keys(registry, *, disabled: bool) -> set[str]:
