@@ -1,12 +1,18 @@
 {
   "config": {
     "step": {
+      "rate_plan": {
+        "title": "Rate plan",
+        "description": "Which rate plan is {energy_company} billing you on?\n\nUltra-Low Overnight is an optional plan with a very low overnight rate and a higher on-peak rate. Leave this off if you are on the standard Time-of-Use plan.",
+        "data": {
+          "ulo_enabled": "Enable Ultra-Low Overnight (ULO) rates"
+        }
+      },
       "user": {
         "title": "Add energy rates sensor",
         "description": "Select your energy company from the list below.",
         "data": {
-          "energy_company": "Energy Company",
-          "ulo_enabled": "Enable Ultra-Low Overnight (ULO) rates"
+          "energy_company": "Energy Company"
         }
       }
     },

@@ -32,6 +32,10 @@ Clone or download the repo, and copy the "ontario_energy_board" folder in "custo
 
 Once installed, use the UI to add the new component to your setup, or click on the button below:
 
+Pick your energy company from the list. Electricity companies are then asked
+which rate plan you are on — standard Time-of-Use, or Ultra-Low Overnight.
+Natural gas has no peak periods, so there is nothing further to answer.
+
 [![AA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start?domain=ontario_energy_board)
 
 
