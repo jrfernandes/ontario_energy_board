@@ -1,0 +1,43 @@
+{
+  // ---- Testing -----------------------------------------------------------
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+
+  "python.testing.pytestArgs": ["tests"],
+
+  // ---- Formatting and linting --------------------------------------------
+  // ruff replaces black and flake8; it is configured in pyproject.toml.
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      // Safe to run on save now that ruff both sorts and checks imports, so
+      // the editor and CI can no longer disagree about ordering.
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+
+  // Lets Pylance resolve `custom_components.ontario_energy_board...` imports,
+  // which are rooted at the workspace folder rather than an installed package.
+  "python.analysis.extraPaths": ["."],
+
+  // ---- Noise reduction ---------------------------------------------------
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/*.egg-info": true
+  },
+  "search.exclude": {
+    ".venv": true,
+    "dev-config": true,
+    "htmlcov": true
+  },
+  // Home Assistant writes to dev-config constantly; watching it thrashes the
+  // file watcher and triggers spurious test re-discovery.
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/dev-config/**": true
+  }
+}

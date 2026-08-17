@@ -1,13 +1,15 @@
 """Valication script to ensure coverage of OEB data parameters."""
 
 import sys
+
+import defusedxml.ElementTree as ET
+import requests
+
 from custom_components.ontario_energy_board.const import (
     ELECTRICITY_RATES_URL,
     NATURAL_GAS_RATES_URL,
     XML_KEY_MAPPINGS,
 )
-import requests
-import defusedxml.ElementTree as ET
 
 # Grab OEB data
 electricity_data = requests.get(ELECTRICITY_RATES_URL, verify=False)
@@ -68,7 +70,7 @@ for energy_type, data_tree in [
 # If there are key differences, exit with a non-zero exit code to indicate failure
 if key_differences:
     # Display the key differences in the pipeline and exist in error
-    print("Key Differences: {}".format(key_differences))
+    print(f"Key Differences: {key_differences}")
     sys.exit(1)
 else:
     # Display no differences

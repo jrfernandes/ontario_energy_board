@@ -1,0 +1,43 @@
+[tool.ruff]
+# Home Assistant itself requires 3.14, so the code only ever runs there. This is
+# deliberately held one version lower: at py314 the formatter rewrites
+# `except (A, B):` to the PEP 758 unparenthesized form, which is valid only on
+# 3.14+ and is not a change worth making just to switch formatters. Raise this
+# when you actively want those modernisations.
+target-version = "py313"
+line-length = 88
+exclude = [".venv", "dev-config"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # import sorting (replaces flake8-import-order)
+    "UP",    # pyupgrade
+    "B",     # bugbear
+    "SIM",   # flake8-simplify
+    "C4",    # flake8-comprehensions
+    "RET",   # flake8-return
+    "PTH",   # prefer pathlib
+    "ASYNC", # blocking calls inside async functions
+    "T20",   # stray print statements
+]
+# Not yet enabled, because the current code does not satisfy them:
+#   DTZ  - the existing tests build naive datetimes
+#   RUF  - RUF012 flags the coordinator's mutable class attributes
+# Both are worth turning on once those are addressed, rather than suppressed.
+# Line length is enforced by the formatter, which leaves long strings, URLs and
+# comments alone on purpose.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# A CI script whose entire job is to report its findings on stdout.
+"oeb_validation.py" = ["T201"]
+
+[tool.ruff.lint.isort]
+# Interleave `import x` and `from x import y` alphabetically within a section,
+# matching the convention used by Home Assistant core.
+force-sort-within-sections = true
+known-first-party = ["custom_components", "tests"]
+combine-as-imports = true

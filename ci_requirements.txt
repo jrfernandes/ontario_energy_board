@@ -1,3 +1,4 @@
+# Development and CI dependencies.
 defusedxml==0.7.1
 requests
 homeassistant
@@ -5,5 +6,6 @@ holidays
 pytest
 pytest-asyncio
 pytest-mock
-black
-flake8
+
+# Formatting, linting and import sorting, all configured in pyproject.toml.
+ruff==0.16.3

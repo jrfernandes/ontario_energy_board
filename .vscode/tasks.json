@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup",
+      "detail": "Create .venv and install the development dependencies",
+      "type": "shell",
+      "command": "scripts/setup",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test",
+      "detail": "Run the full suite with coverage, as CI does",
+      "type": "shell",
+      "command": "scripts/test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint",
+      "detail": "Format with ruff, then fix what ruff can fix automatically",
+      "type": "shell",
+      "command": "scripts/lint",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Home Assistant",
+      "detail": "Start Home Assistant on :8123 without the debugger attached",
+      "type": "shell",
+      "command": "scripts/develop",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      // Used as the preLaunchTask of the "Home Assistant" debug configuration:
+      // it seeds dev-config/ and the symlink, then exits so the debugger can
+      // own the Home Assistant process itself.
+      "label": "Prepare dev-config",
+      "detail": "Create dev-config/ without starting Home Assistant",
+      "type": "shell",
+      "command": "scripts/develop --prepare-only",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "close": true
+      }
+    },
+    {
+      "label": "Validate OEB data coverage",
+      "detail": "Check the live OEB feeds against XML_KEY_MAPPINGS",
+      "type": "shell",
+      "command": "${command:python.interpreterPath} oeb_validation.py",
+      "problemMatcher": []
+    }
+  ]
+}

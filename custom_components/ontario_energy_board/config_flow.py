@@ -1,8 +1,7 @@
 """Config flow for Ontario Energy Board integration."""
 
-import voluptuous as vol
-
 from homeassistant import config_entries
+import voluptuous as vol
 
 from .common import get_energy_companies
 from .const import CONF_ENERGY_COMPANY, CONF_ULO_ENABLED, DOMAIN

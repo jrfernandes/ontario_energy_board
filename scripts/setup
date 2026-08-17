@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Install the development and CI dependencies.
+#
+# Outside a container this keeps everything in a local .venv. Inside a
+# devcontainer or Codespace it installs into the container's Python.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+PYTHON="${PYTHON:-python3}"
+
+if [ -z "${VIRTUAL_ENV:-}" ] &&
+    [ ! -f /.dockerenv ] &&
+    [ -z "${REMOTE_CONTAINERS:-}" ] &&
+    [ -z "${CODESPACES:-}" ]; then
+    if [ ! -d .venv ]; then
+        echo "Creating .venv"
+        "$PYTHON" -m venv .venv
+    fi
+    PYTHON=".venv/bin/python"
+fi
+
+"$PYTHON" -m pip install --upgrade pip
+"$PYTHON" -m pip install -r ci_requirements.txt
+
+echo
+echo "Ready. Next:"
+echo "  scripts/test      run the test suite"
+echo "  scripts/develop   start Home Assistant with this integration loaded"
