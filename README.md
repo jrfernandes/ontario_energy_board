@@ -63,9 +63,45 @@ Delete `dev-config/` to start from a clean instance.
 ## Running the tests
 
 ```bash
-scripts/test            # everything
-scripts/test -k peak    # a subset
+scripts/test                            # everything
+scripts/test tests/test_peaks.py -q     # just the peak rules
 ```
+
+The suite runs against a real (in-process) Home Assistant instance, so no
+separate HA install is needed. Every OEB request is served from the trimmed
+snapshots in `tests/fixtures/`, and `pytest-socket` blocks real network access,
+so a missing mock fails loudly rather than silently hitting the live feed.
+
+Layout:
+
+| File | Covers |
+|:--|:--|
+| `tests/test_peaks.py` | The peak rules as pure functions — no Home Assistant, runs in milliseconds |
+| `tests/test_common.py` | Parsing the OEB documents, and resolving the sector from a company name |
+| `tests/test_config_flow.py` | The company picker and duplicate handling |
+| `tests/test_init.py` | Setup, unload, retry on failure, and config entry migration |
+| `tests/test_sensor.py` | The entity end to end, with time frozen in `America/Toronto` |
+
+## Refreshing the test fixtures
+
+`tests/fixtures/` holds trimmed snapshots of the two OEB feeds. Re-capture them
+when the upstream schema changes:
+
+```bash
+curl -k -o tests/fixtures/GasBillData.xml https://www.oeb.ca/_html/calculator/data/GasBillData.xml
+```
+
+The electricity document is trimmed to a handful of rate classes to keep it
+readable; take the same shape when refreshing it.
+
+## Adding a new OEB data point
+
+1. Add the XML key to `XML_KEY_MAPPINGS` in `const.py`.
+2. Add a row to the attribute table below.
+
+`oeb_validation.py` runs nightly in CI against the live feeds and fails if the
+two ever drift apart, so a new upstream field shows up as a red build without
+anyone needing to push a commit.
 
 ## Formatting and linting
 
@@ -84,7 +120,8 @@ the Python extension picks up `.venv` (or select it via *Python: Select
 Interpreter*).
 
 - **Testing sidebar** — the suite appears in the Test Explorer; run or debug any
-  individual test from the gutter.
+  individual test from the gutter. IDE runs pass `--no-cov`, because coverage
+  tracing prevents the debugger from hitting breakpoints.
 - **Run and Debug → Home Assistant** — starts a real instance on
   <http://localhost:8123> under the debugger, with breakpoints live in
   `custom_components/ontario_energy_board`. It seeds `dev-config/` first via a

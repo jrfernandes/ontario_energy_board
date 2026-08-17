@@ -1,6 +1,7 @@
 """Config flow for Ontario Energy Board integration."""
 
 from homeassistant import config_entries
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .common import get_energy_companies
@@ -23,7 +24,7 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         Returns:
             ConfigFlowResult: The result of the config flow step.
         """
-        companies_list = await get_energy_companies()
+        companies_list = await get_energy_companies(async_get_clientsession(self.hass))
 
         if user_input is not None:
             energy_company = user_input[CONF_ENERGY_COMPANY]

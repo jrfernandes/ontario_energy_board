@@ -1,0 +1,163 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<BillDataTable>
+	<BillDataRow>
+		<Dist>Alectra Utilities Corporation-Brampton Rate Zone</Dist>
+		<Class>RESIDENTIAL</Class>
+		<YEAR>2026</YEAR>
+		<ET1>600</ET1>
+		<RPP1>0.12</RPP1>
+		<RPP2>0.142</RPP2>
+		<SC>30.8</SC>
+		<DC>-0.0002</DC>
+		<GA_RR_NONRPP>0.0036</GA_RR_NONRPP>
+		<Net>0.0126</Net>
+		<Conn>0.0085</Conn>
+		<WMSR>0.0047</WMSR>
+		<RRRP>0.0006</RRRP>
+		<SSS>0.25</SSS>
+		<LF>1.0341</LF>
+		<GST>0.13</GST>
+		<EOffP>0.64</EOffP>
+		<EMidP>0.18</EMidP>
+		<EOnP>0.18</EOnP>
+		<RPPOffP>0.098</RPPOffP>
+		<RPPMidP>0.157</RPPMidP>
+		<RPPOnP>0.203</RPPOnP>
+		<PBGA>0.03904</PBGA>
+		<Rebate>0.235</Rebate>
+		<OFC>0.87</OFC>
+		<VC />
+		<OC>-0.0002</OC>
+		<DRP>0</DRP>
+		<DRC />
+		<DRP_Rate>42.88</DRP_Rate>
+		<ULO_midp>0.157</ULO_midp>
+		<ULO_midp_period>0.27</ULO_midp_period>
+		<ULO_onp>0.391</ULO_onp>
+		<ULO_onp_period>0.13</ULO_onp_period>
+		<ULO_overnight>0.039</ULO_overnight>
+		<ULO_overnight_period>0.4</ULO_overnight_period>
+		<ULO_weekendoffp>0.098</ULO_weekendoffp>
+		<ULO_weekendoffp_period>0.2</ULO_weekendoffp_period>
+	</BillDataRow>
+	<BillDataRow>
+		<Dist>Algoma Power Inc.</Dist>
+		<Class>RESIDENTIAL R1</Class>
+		<YEAR>2026</YEAR>
+		<ET1>600</ET1>
+		<RPP1>0.12</RPP1>
+		<RPP2>0.142</RPP2>
+		<SC>101.68</SC>
+		<DC>0.0441</DC>
+		<GA_RR_NONRPP />
+		<Net>0.0121</Net>
+		<Conn>0.0088</Conn>
+		<WMSR>0.0047</WMSR>
+		<RRRP>0.0006</RRRP>
+		<SSS>0.25</SSS>
+		<LF>1.0873</LF>
+		<GST>0.13</GST>
+		<EOffP>0.64</EOffP>
+		<EMidP>0.18</EMidP>
+		<EOnP>0.18</EOnP>
+		<RPPOffP>0.098</RPPOffP>
+		<RPPMidP>0.157</RPPMidP>
+		<RPPOnP>0.203</RPPOnP>
+		<PBGA>0.03904</PBGA>
+		<Rebate>0.235</Rebate>
+		<OFC>0.42</OFC>
+		<VC>0.0441</VC>
+		<OC>0</OC>
+		<DRP>1</DRP>
+		<DRC />
+		<DRP_Rate>42.88</DRP_Rate>
+		<ULO_midp>0.157</ULO_midp>
+		<ULO_midp_period>0.27</ULO_midp_period>
+		<ULO_onp>0.391</ULO_onp>
+		<ULO_onp_period>0.13</ULO_onp_period>
+		<ULO_overnight>0.039</ULO_overnight>
+		<ULO_overnight_period>0.4</ULO_overnight_period>
+		<ULO_weekendoffp>0.098</ULO_weekendoffp>
+		<ULO_weekendoffp_period>0.2</ULO_weekendoffp_period>
+	</BillDataRow>
+	<BillDataRow>
+		<Dist>Algoma Power Inc.</Dist>
+		<Class>SEASONAL CUSTOMERS</Class>
+		<YEAR>2026</YEAR>
+		<ET1>600</ET1>
+		<RPP1>0.12</RPP1>
+		<RPP2>0.142</RPP2>
+		<SC>105.55</SC>
+		<DC>0.025</DC>
+		<GA_RR_NONRPP />
+		<Net>0.0121</Net>
+		<Conn>0.0088</Conn>
+		<WMSR>0.0047</WMSR>
+		<RRRP>0.0006</RRRP>
+		<SSS>0.25</SSS>
+		<LF>1.0873</LF>
+		<GST>0.13</GST>
+		<EOffP>0.64</EOffP>
+		<EMidP>0.18</EMidP>
+		<EOnP>0.18</EOnP>
+		<RPPOffP>0.098</RPPOffP>
+		<RPPMidP>0.157</RPPMidP>
+		<RPPOnP>0.203</RPPOnP>
+		<PBGA>0.03904</PBGA>
+		<Rebate>0.235</Rebate>
+		<OFC>0.42</OFC>
+		<VC>0.025</VC>
+		<OC>0</OC>
+		<DRP>0</DRP>
+		<DRC />
+		<DRP_Rate>42.88</DRP_Rate>
+		<ULO_midp>0.157</ULO_midp>
+		<ULO_midp_period>0.27</ULO_midp_period>
+		<ULO_onp>0.391</ULO_onp>
+		<ULO_onp_period>0.13</ULO_onp_period>
+		<ULO_overnight>0.039</ULO_overnight>
+		<ULO_overnight_period>0.4</ULO_overnight_period>
+		<ULO_weekendoffp>0.098</ULO_weekendoffp>
+		<ULO_weekendoffp_period>0.2</ULO_weekendoffp_period>
+	</BillDataRow>
+	<BillDataRow>
+		<Dist>Algoma Power Inc.</Dist>
+		<Class>RESIDENTIAL R2</Class>
+		<YEAR>2026</YEAR>
+		<ET1>600</ET1>
+		<RPP1>0.12</RPP1>
+		<RPP2>0.142</RPP2>
+		<SC>807.11</SC>
+		<DC />
+		<GA_RR_NONRPP />
+		<Net>5.4067</Net>
+		<Conn>3.9119</Conn>
+		<WMSR>0.0047</WMSR>
+		<RRRP>0.0006</RRRP>
+		<SSS>0.25</SSS>
+		<LF>1.0873</LF>
+		<GST>0.13</GST>
+		<EOffP>0.64</EOffP>
+		<EMidP>0.18</EMidP>
+		<EOnP>0.18</EOnP>
+		<RPPOffP>0.098</RPPOffP>
+		<RPPMidP>0.157</RPPMidP>
+		<RPPOnP>0.203</RPPOnP>
+		<PBGA>0.03904</PBGA>
+		<Rebate>0.235</Rebate>
+		<OFC>0.42</OFC>
+		<VC />
+		<OC>0</OC>
+		<DRP>0</DRP>
+		<DRC />
+		<DRP_Rate>42.88</DRP_Rate>
+		<ULO_midp>0.157</ULO_midp>
+		<ULO_midp_period>0.27</ULO_midp_period>
+		<ULO_onp>0.391</ULO_onp>
+		<ULO_onp_period>0.13</ULO_onp_period>
+		<ULO_overnight>0.039</ULO_overnight>
+		<ULO_overnight_period>0.4</ULO_overnight_period>
+		<ULO_weekendoffp>0.098</ULO_weekendoffp>
+		<ULO_weekendoffp_period>0.2</ULO_weekendoffp_period>
+	</BillDataRow>
+</BillDataTable>

@@ -26,7 +26,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}", "-vv"],
+      "args": ["${file}", "--no-cov", "-vv"],
       "console": "integratedTerminal",
       "justMyCode": false,
       "python": "${command:python.interpreterPath}"
@@ -37,7 +37,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests"],
+      "args": ["tests", "--no-cov"],
       "console": "integratedTerminal",
       "justMyCode": false,
       "python": "${command:python.interpreterPath}"

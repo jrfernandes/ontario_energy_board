@@ -1,11 +1,16 @@
 # Development and CI dependencies.
-defusedxml==0.7.1
-requests
-homeassistant
-holidays
-pytest
-pytest-asyncio
-pytest-mock
+#
+# pytest-homeassistant-custom-component pins the Home Assistant version the
+# tests run against, along with pytest and its plugins (including freezegun and
+# pytest-socket). Bump this one line to test against a newer Home Assistant.
+pytest-homeassistant-custom-component==0.13.356
 
-# Formatting, linting and import sorting, all configured in pyproject.toml.
+# Runtime requirements, mirrored from manifest.json.
+defusedxml>=0.7.1
+holidays>=0.76
+
+# Used by oeb_validation.py.
+requests
+
+# Formatting and linting, configured in pyproject.toml.
 ruff==0.16.3

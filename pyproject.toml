@@ -20,13 +20,12 @@ select = [
     "C4",    # flake8-comprehensions
     "RET",   # flake8-return
     "PTH",   # prefer pathlib
+    "DTZ",   # naive datetime usage
     "ASYNC", # blocking calls inside async functions
     "T20",   # stray print statements
 ]
-# Not yet enabled, because the current code does not satisfy them:
-#   DTZ  - the existing tests build naive datetimes
-#   RUF  - RUF012 flags the coordinator's mutable class attributes
-# Both are worth turning on once those are addressed, rather than suppressed.
+# RUF is not enabled yet: RUF012 flags the coordinator's mutable class
+# attributes, which is addressed separately rather than suppressed here.
 # Line length is enforced by the formatter, which leaves long strings, URLs and
 # comments alone on purpose.
 ignore = ["E501"]

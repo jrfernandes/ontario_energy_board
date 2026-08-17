@@ -7,7 +7,10 @@ DOMAIN = "ontario_energy_board"
 CONF_ENERGY_COMPANY = "energy_company"
 CONF_ULO_ENABLED = "ulo_enabled"
 
-ENERGY_SECTORS = ["electricity", "natural_gas"]
+SECTOR_ELECTRICITY = "electricity"
+SECTOR_NATURAL_GAS = "natural_gas"
+
+ENERGY_SECTORS = [SECTOR_ELECTRICITY, SECTOR_NATURAL_GAS]
 
 ELECTRICITY_RATES_URL = "https://www.oeb.ca/_html/calculator/data/BillData.xml"
 NATURAL_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xml"
