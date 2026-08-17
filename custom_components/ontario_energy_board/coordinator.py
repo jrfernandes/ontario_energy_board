@@ -10,8 +10,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .common import energy_sector_from_company_name, get_energy_company_data
-from .const import CONF_ENERGY_COMPANY, CONF_ULO_ENABLED, DOMAIN, REFRESH_RATES_INTERVAL
+from .common import (
+    effective_ulo_enabled,
+    energy_sector_from_company_name,
+    get_energy_company_data,
+)
+from .const import CONF_ENERGY_COMPANY, DOMAIN, REFRESH_RATES_INTERVAL
 
 _LOGGER: Final = logging.getLogger(__name__)
 
@@ -35,7 +39,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         self.websession = async_get_clientsession(hass)
         self.ontario_holidays = ontario_holidays
         self.energy_company = config_entry.data[CONF_ENERGY_COMPANY]
-        self.ulo_enabled = config_entry.data[CONF_ULO_ENABLED]
+        self.ulo_enabled = effective_ulo_enabled(config_entry)
         # Derived from the stored company name, which carries the sector as a
         # suffix. It is a property of the configuration, not of the fetch.
         self.energy_sector = energy_sector_from_company_name(self.energy_company)

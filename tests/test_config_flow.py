@@ -192,3 +192,105 @@ async def test_only_the_chosen_sectors_document_is_downloaded(
 
     assert requested == {NATURAL_GAS_RATES_URL}
     assert ELECTRICITY_RATES_URL not in requested
+
+
+async def test_options_flow_changes_the_rate_plan(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    assert result["data_schema"]({})[CONF_ULO_ENABLED] is False
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_ULO_ENABLED: True}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_ULO_ENABLED] is True
+    # The setup value is left alone, so the unique id still matches it.
+    assert entry.data[CONF_ULO_ENABLED] is False
+    assert entry.unique_id == f"{ELECTRICITY_COMPANY} False"
+
+
+async def test_options_flow_is_not_offered_for_natural_gas(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    entry = build_config_entry(NATURAL_GAS_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_rate_plan"
+
+
+async def test_a_plan_changed_from_the_options_still_blocks_a_duplicate(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """The unique id records the plan chosen at setup, not the current one.
+
+    An entry set up on Time-of-Use and later corrected to ULO keeps the unique
+    id "<company> False". Adding a ULO entry for the same company would take
+    the still-free "<company> True", so the check has to compare current plans.
+    """
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    options = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        options["flow_id"], {CONF_ULO_ENABLED: True}
+    )
+    await hass.async_block_till_done()
+
+    result = await _choose_sector(hass, "electricity")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY, CONF_ULO_ENABLED: True},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_a_changed_plan_cannot_regain_its_original_plan(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """Known limitation, pinned so it is a decision rather than a surprise.
+
+    The unique id records the plan chosen at setup and cannot change without
+    orphaning every entity derived from it. An entry set up on Time-of-Use and
+    later corrected to ULO therefore still occupies "<company> False", so
+    adding a Time-of-Use entry for that company is refused. Changing the option
+    back is the way out.
+    """
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    options = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        options["flow_id"], {CONF_ULO_ENABLED: True}
+    )
+    await hass.async_block_till_done()
+
+    result = await _choose_sector(hass, "electricity")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY, CONF_ULO_ENABLED: False},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

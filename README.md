@@ -51,12 +51,23 @@ without carrying entities you will never look at.
 **Current rate** is the one to put on a dashboard. It follows the Time-of-Use
 or Ultra-Low Overnight schedule automatically, including Ontario holidays.
 
+Every period rate is published, for both plans, grouped under the device's
+diagnostics. That way the plans can be compared, and correcting the plan later
+takes effect immediately.
+
 ## Cost tracking in the Energy dashboard
 
 `Current rate` is shaped so Home Assistant can use it as a price source. In
 **Settings → Dashboards → Energy**, edit your electricity or gas consumption
 source, choose *Use an entity with current price*, and select it. Costs then
 follow the peak schedule through the day rather than assuming a flat rate.
+
+## Changing your rate plan
+
+If you switch between Time-of-Use and Ultra-Low Overnight with your utility,
+open the integration's **Configure** button and change the rate plan there.
+Home Assistant cannot change your billing; this only tells it which rates
+apply. Natural gas has no rate plan, so there is nothing to configure.
 
 ## Upgrading from 0.x
 
@@ -80,7 +91,7 @@ individual entities.
 
 ## Available entities
 
-#### Electricity — Time-of-Use
+#### Electricity
 
 | Entity | On by default | Unit | OEB key |
 |:--|:--|:--|:--|
@@ -90,46 +101,10 @@ individual entities.
 | Off-peak rate | **yes** | `CAD/kWh` | `RPPOffP` |
 | Mid-peak rate | **yes** | `CAD/kWh` | `RPPMidP` |
 | On-peak rate | **yes** | `CAD/kWh` | `RPPOnP` |
-| ULO overnight rate | no | `CAD/kWh` | `ULO_overnight` |
-| ULO weekend off-peak rate | no | `CAD/kWh` | `ULO_weekendoffp` |
-| ULO mid-peak rate | no | `CAD/kWh` | `ULO_midp` |
-| ULO on-peak rate | no | `CAD/kWh` | `ULO_onp` |
-| Distribution variable charge | no | `CAD/kWh` | `DC` |
-| Distribution volumetric charge | no | `CAD/kWh` | `VC` |
-| Other volumetric charges | no | `CAD/kWh` | `OC` |
-| Global adjustment | no | `CAD/kWh` | `PBGA` |
-| Global adjustment rate rider | no | `CAD/kWh` | `GA_RR_NONRPP` |
-| Transmission network rate | no | `CAD/kWh` | `Net` |
-| Transmission connection rate | no | `CAD/kWh` | `Conn` |
-| Wholesale market service charge | no | `CAD/kWh` | `WMSR` |
-| Rural and remote rate protection | no | `CAD/kWh` | `RRRP` |
-| Debt retirement charge | no | `CAD/kWh` | `DRC` |
-| Lower tier price | no | `CAD/kWh` | `RPP1` |
-| Higher tier price | no | `CAD/kWh` | `RPP2` |
-| Monthly service charge | no | `CAD` | `SC` |
-| Standard supply service charge | no | `CAD` | `SSS` |
-| Other fixed charges | no | `CAD` | `OFC` |
-| Distribution rate protection rate | no | `CAD` | `DRP_Rate` |
-| Harmonized sales tax | no | `%` | `GST` |
-| Ontario electricity rebate | no | `%` | `Rebate` |
-| Tier threshold | no | `kWh` | `ET1` |
-| Loss factor | no | `—` | `LF` |
-| Rate year | no | `—` | `YEAR` |
-| Distribution rate protection | no | `—` | `DRP` |
-
-#### Electricity — Ultra-Low Overnight
-
-| Entity | On by default | Unit | OEB key |
-|:--|:--|:--|:--|
-| Current rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
-| Active peak | **yes** | `—` | `—` |
 | ULO overnight rate | **yes** | `CAD/kWh` | `ULO_overnight` |
 | ULO weekend off-peak rate | **yes** | `CAD/kWh` | `ULO_weekendoffp` |
 | ULO mid-peak rate | **yes** | `CAD/kWh` | `ULO_midp` |
 | ULO on-peak rate | **yes** | `CAD/kWh` | `ULO_onp` |
-| Off-peak rate | no | `CAD/kWh` | `RPPOffP` |
-| Mid-peak rate | no | `CAD/kWh` | `RPPMidP` |
-| On-peak rate | no | `CAD/kWh` | `RPPOnP` |
 | Distribution variable charge | no | `CAD/kWh` | `DC` |
 | Distribution volumetric charge | no | `CAD/kWh` | `VC` |
 | Other volumetric charges | no | `CAD/kWh` | `OC` |
