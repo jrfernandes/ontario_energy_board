@@ -10,19 +10,31 @@
             "unknown": "Unexpected error"
         },
         "step": {
-            "rate_plan": {
+            "electricity": {
                 "data": {
-                    "ulo_enabled": "Enable Ultra-Low Overnight (ULO) rates"
+                    "energy_company": "Energy company",
+                    "ulo_enabled": "Ultra-Low Overnight (ULO) rates"
                 },
-                "description": "Which rate plan is {energy_company} billing you on?\n\nUltra-Low Overnight is an optional plan with a very low overnight rate and a higher on-peak rate. Leave this off if you are on the standard Time-of-Use plan.",
-                "title": "Rate plan"
+                "data_description": {
+                    "ulo_enabled": "Turn this on only if you have opted in to the Ultra-Low Overnight plan, which has a very low overnight rate and a higher on-peak rate. Leave it off for the standard Time-of-Use plan."
+                },
+                "description": "Select your electricity distributor and rate class.",
+                "title": "Electricity company"
+            },
+            "natural_gas": {
+                "data": {
+                    "energy_company": "Energy company"
+                },
+                "description": "Select your natural gas distributor and service area.",
+                "title": "Natural gas company"
             },
             "user": {
-                "data": {
-                    "energy_company": "Energy Company"
+                "description": "Which kind of energy company would you like to add?",
+                "menu_options": {
+                    "electricity": "Electricity",
+                    "natural_gas": "Natural gas"
                 },
-                "description": "Select your energy company from the list below.",
-                "title": "Add energy rates sensor"
+                "title": "Ontario Energy Board"
             }
         }
     },
