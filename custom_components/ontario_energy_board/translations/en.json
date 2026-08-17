@@ -19,5 +19,31 @@
                 "title": "Add energy rates sensor"
             }
         }
+    },
+    "entity": {
+        "sensor": {
+            "active_peak": {
+                "name": "Active peak",
+                "state": {
+                    "mid_peak": "Mid-peak",
+                    "off_peak": "Off-peak",
+                    "on_peak": "On-peak",
+                    "ulo_mid_peak": "Mid-peak",
+                    "ulo_off_peak": "Weekend off-peak",
+                    "ulo_on_peak": "On-peak",
+                    "ulo_overnight": "Overnight"
+                }
+            },
+            "current_rate": {
+                "name": "Current rate"
+            },
+            "season": {
+                "name": "Season",
+                "state": {
+                    "summer": "Summer",
+                    "winter": "Winter"
+                }
+            }
+        }
     }
 }

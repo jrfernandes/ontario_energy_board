@@ -1,5 +1,7 @@
 """Data update coordinator for the Ontario Energy Board integration."""
 
+from collections.abc import Container
+from datetime import date
 import logging
 from typing import Final
 
@@ -17,7 +19,12 @@ _LOGGER: Final = logging.getLogger(__name__)
 class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator[dict]):
     """Coordinator to manage Ontario Energy Board data."""
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        ontario_holidays: Container[date],
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
@@ -26,6 +33,7 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             update_interval=REFRESH_RATES_INTERVAL,
         )
         self.websession = async_get_clientsession(hass)
+        self.ontario_holidays = ontario_holidays
         self.energy_company = config_entry.data[CONF_ENERGY_COMPANY]
         self.ulo_enabled = config_entry.data[CONF_ULO_ENABLED]
         # Derived from the stored company name, which carries the sector as a

@@ -19,5 +19,31 @@
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]"
     }
+  },
+  "entity": {
+    "sensor": {
+      "current_rate": {
+        "name": "Current rate"
+      },
+      "active_peak": {
+        "name": "Active peak",
+        "state": {
+          "on_peak": "On-peak",
+          "mid_peak": "Mid-peak",
+          "off_peak": "Off-peak",
+          "ulo_on_peak": "On-peak",
+          "ulo_mid_peak": "Mid-peak",
+          "ulo_off_peak": "Weekend off-peak",
+          "ulo_overnight": "Overnight"
+        }
+      },
+      "season": {
+        "name": "Season",
+        "state": {
+          "summer": "Summer",
+          "winter": "Winter"
+        }
+      }
+    }
   }
 }
