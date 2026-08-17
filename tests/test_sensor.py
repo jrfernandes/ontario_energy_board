@@ -160,8 +160,10 @@ async def test_entities_are_grouped_under_a_service_device(hass, init_integratio
     )
     assert device.model == "Electricity · Time-of-Use"
 
-    entities = er.async_entries_for_device(er.async_get(hass), device.id)
-    assert len(entities) == 3
+    entities = er.async_entries_for_device(
+        er.async_get(hass), device.id, include_disabled_entities=True
+    )
+    assert len(entities) > 3
 
 
 async def test_pre_1_0_rate_entity_keeps_its_entity_id(
@@ -220,3 +222,127 @@ async def test_only_clock_dependent_entities_poll(hass, init_integration):
     polling = {e.entity_description.key for e in entities if e.should_poll}
 
     assert polling == {"current_rate", "active_peak", "season"}
+
+
+def _keys(registry, *, disabled: bool) -> set[str]:
+    """Description keys of this device's entities, taken from their entity ids."""
+    return {
+        entry.entity_id.removeprefix(f"{ELECTRICITY}_")
+        for entry in registry.entities.values()
+        if bool(entry.disabled) is disabled
+        and entry.entity_id.startswith(f"{ELECTRICITY}_")
+    }
+
+
+async def test_time_of_use_entry_enables_only_its_own_rates(hass, init_integration):
+    """A lean default surface: the plan's rates, the peak, and the season."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    registry = er.async_get(hass)
+    enabled = {e.entity_id for e in registry.entities.values() if not e.disabled}
+
+    assert enabled == {
+        f"{ELECTRICITY}_current_rate",
+        f"{ELECTRICITY}_active_peak",
+        f"{ELECTRICITY}_season",
+        f"{ELECTRICITY}_off_peak_rate",
+        f"{ELECTRICITY}_mid_peak_rate",
+        f"{ELECTRICITY}_on_peak_rate",
+    }
+
+    assert hass.states.get(f"{ELECTRICITY}_on_peak_rate").state == "0.203"
+
+
+async def test_the_other_plans_rates_ship_disabled(hass, init_integration):
+    """Both plans are published so they can be compared without reconfiguring."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    registry = er.async_get(hass)
+    disabled = _keys(registry, disabled=True)
+
+    assert {"ulo_overnight_rate", "ulo_on_peak_rate"} <= disabled
+    # Published, but not cluttering the dashboard until asked for.
+    assert hass.states.get(f"{ELECTRICITY}_ulo_overnight_rate") is None
+
+
+async def test_bill_components_ship_as_disabled_diagnostics(hass, init_integration):
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    registry = er.async_get(hass)
+
+    for key in ("loss_factor", "wholesale_market_service_charge", "tier_threshold"):
+        entry = next(
+            e for e in registry.entities.values() if e.unique_id.endswith(f"_{key}")
+        )
+        assert entry.disabled, key
+        assert entry.entity_category is er.EntityCategory.DIAGNOSTIC, key
+
+
+async def test_percentages_are_scaled_from_the_oeb_fractions(
+    hass, init_integration, enable_all_entities
+):
+    """HST arrives as 0.13; reporting it as "0.13 %" would be wrong."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    state = hass.states.get(f"{ELECTRICITY}_harmonized_sales_tax")
+
+    assert float(state.state) == pytest.approx(13.0)
+    assert state.attributes["unit_of_measurement"] == "%"
+
+
+async def test_empty_oeb_values_report_as_unknown(
+    hass, init_integration, enable_all_entities
+):
+    """The feed ships empty elements for charges a distributor does not levy.
+
+    Those parse to "", which is not a valid state for a measurement sensor.
+    """
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    # <VC></VC> is empty in the fixture, as it is for most distributors.
+    state = hass.states.get(f"{ELECTRICITY}_distribution_volumetric_charge")
+
+    assert state.state == "unknown"
+
+
+def test_every_sensor_has_a_translated_name():
+    """A missing name leaves entity ids to collide into _2, _3 suffixes.
+
+    has_entity_name builds the entity id from the translated name, so an
+    untranslated key is not a cosmetic problem: several entities end up
+    competing for the same object id.
+    """
+    import json
+    from pathlib import Path
+
+    from custom_components.ontario_energy_board import sensor as sensor_module
+
+    strings = json.loads(
+        (Path(sensor_module.__file__).parent / "strings.json").read_text()
+    )
+    translated = set(strings["entity"]["sensor"])
+
+    class _Coordinator:
+        def __init__(self, energy_sector, ulo_enabled):
+            self.energy_sector = energy_sector
+            self.ulo_enabled = ulo_enabled
+
+    described = {
+        description.translation_key
+        for energy_sector, ulo_enabled in (
+            ("electricity", False),
+            ("electricity", True),
+            ("natural_gas", False),
+        )
+        for description in sensor_module.descriptions_for(
+            _Coordinator(energy_sector, ulo_enabled)
+        )
+    }
+
+    assert described, "no descriptions were collected"
+    assert described <= translated, f"untranslated: {sorted(described - translated)}"

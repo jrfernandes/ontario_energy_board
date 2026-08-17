@@ -22,9 +22,6 @@
   },
   "entity": {
     "sensor": {
-      "current_rate": {
-        "name": "Current rate"
-      },
       "active_peak": {
         "name": "Active peak",
         "state": {
@@ -37,12 +34,99 @@
           "ulo_overnight": "Overnight"
         }
       },
+      "current_rate": {
+        "name": "Current rate"
+      },
+      "debt_retirement_charge": {
+        "name": "Debt retirement charge"
+      },
+      "distribution_rate_protection_rate": {
+        "name": "Distribution rate protection rate"
+      },
+      "distribution_variable_charge": {
+        "name": "Distribution variable charge"
+      },
+      "distribution_volumetric_charge": {
+        "name": "Distribution volumetric charge"
+      },
+      "global_adjustment": {
+        "name": "Global adjustment"
+      },
+      "global_adjustment_rate_rider": {
+        "name": "Global adjustment rate rider"
+      },
+      "harmonized_sales_tax": {
+        "name": "Harmonized sales tax"
+      },
+      "higher_tier_price": {
+        "name": "Higher tier price"
+      },
+      "loss_factor": {
+        "name": "Loss factor"
+      },
+      "lower_tier_price": {
+        "name": "Lower tier price"
+      },
+      "mid_peak_rate": {
+        "name": "Mid-peak rate"
+      },
+      "monthly_fixed_charge": {
+        "name": "Monthly service charge"
+      },
+      "off_peak_rate": {
+        "name": "Off-peak rate"
+      },
+      "on_peak_rate": {
+        "name": "On-peak rate"
+      },
+      "ontario_electricity_rebate": {
+        "name": "Ontario electricity rebate"
+      },
+      "other_fixed_charges": {
+        "name": "Other fixed charges"
+      },
+      "other_volumetric_charges": {
+        "name": "Other volumetric charges"
+      },
+      "rate_year": {
+        "name": "Rate year"
+      },
+      "rural_remote_rate_protection": {
+        "name": "Rural and remote rate protection"
+      },
       "season": {
         "name": "Season",
         "state": {
           "summer": "Summer",
           "winter": "Winter"
         }
+      },
+      "standard_supply_service_charge": {
+        "name": "Standard supply service charge"
+      },
+      "tier_threshold": {
+        "name": "Tier threshold"
+      },
+      "transmission_connection_rate": {
+        "name": "Transmission connection rate"
+      },
+      "transmission_network_rate": {
+        "name": "Transmission network rate"
+      },
+      "ulo_mid_peak_rate": {
+        "name": "ULO mid-peak rate"
+      },
+      "ulo_off_peak_rate": {
+        "name": "ULO weekend off-peak rate"
+      },
+      "ulo_on_peak_rate": {
+        "name": "ULO on-peak rate"
+      },
+      "ulo_overnight_rate": {
+        "name": "ULO overnight rate"
+      },
+      "wholesale_market_service_charge": {
+        "name": "Wholesale market service charge"
       }
     }
   }
