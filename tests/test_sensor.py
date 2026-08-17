@@ -226,7 +226,12 @@ async def test_only_clock_dependent_entities_poll(hass, init_integration):
     entities = [e for p in sensor_platforms for e in p.entities.values()]
     polling = {e.entity_description.key for e in entities if e.should_poll}
 
-    assert polling == {"current_rate", "active_peak", "season"}
+    assert polling == {
+        "current_rate",
+        "current_all_in_rate",
+        "active_peak",
+        "season",
+    }
 
     # The binary sensor tracks a flag that changes at most daily, so it has no
     # reason to poll; it updates when the coordinator refreshes.
@@ -266,6 +271,7 @@ async def test_period_rates_are_enabled_diagnostics(hass, init_integration):
 
     assert enabled == {
         f"{ELECTRICITY}_current_rate",
+        f"{ELECTRICITY}_current_all_in_rate",
         f"{ELECTRICITY}_active_peak",
         f"{ELECTRICITY}_season",
         f"{ELECTRICITY}_off_peak_rate",
@@ -283,6 +289,9 @@ async def test_period_rates_are_enabled_diagnostics(hass, init_integration):
 
     # Only the live values stay out of the diagnostics section.
     assert registry.async_get(f"{ELECTRICITY}_current_rate").entity_category is None
+    assert (
+        registry.async_get(f"{ELECTRICITY}_current_all_in_rate").entity_category is None
+    )
     assert registry.async_get(f"{ELECTRICITY}_active_peak").entity_category is None
 
 
@@ -507,3 +516,52 @@ async def test_monthly_usage_averages_are_not_entities(hass, init_integration):
 
     for month in ("january", "june", "december"):
         assert f"{GAS}_{month}" not in entity_ids
+
+
+async def test_all_in_rate_is_published_alongside_the_commodity_rate(
+    hass, init_integration
+):
+    """What the next kWh costs once delivery, regulatory charges and tax land."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    commodity = float(hass.states.get(f"{ELECTRICITY}_current_rate").state)
+    all_in = float(hass.states.get(f"{ELECTRICITY}_current_all_in_rate").state)
+
+    assert commodity == pytest.approx(0.203)
+    assert all_in == pytest.approx(0.212135, abs=1e-6)
+    assert (
+        hass.states.get(f"{ELECTRICITY}_current_all_in_rate").attributes[
+            "unit_of_measurement"
+        ]
+        == ELECTRICITY_RATE_UNIT_OF_MEASURE
+    )
+
+
+async def test_all_in_rate_follows_the_active_peak(hass, init_integration):
+    """Delivery is flat per kWh, so the uplift is largest on a cheap kWh."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)) as frozen:
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+        on_peak = float(hass.states.get(f"{ELECTRICITY}_current_all_in_rate").state)
+
+        frozen.move_to(ontario_moment(2024, 1, 15, 22))
+        await async_update_entity(hass, f"{ELECTRICITY}_current_all_in_rate")
+        await async_update_entity(hass, f"{ELECTRICITY}_current_rate")
+        await hass.async_block_till_done()
+
+        off_peak = float(hass.states.get(f"{ELECTRICITY}_current_all_in_rate").state)
+        off_peak_commodity = float(hass.states.get(f"{ELECTRICITY}_current_rate").state)
+
+    assert off_peak == pytest.approx(0.114956, abs=1e-6)
+    assert off_peak < on_peak
+    # 0.098 headline becomes 0.1150 all-in: a 17% uplift, against 4.5% on-peak.
+    assert off_peak / off_peak_commodity > on_peak / 0.203
+
+
+async def test_natural_gas_has_no_all_in_rate(hass, init_integration):
+    """Gas delivery is banded by monthly volume, so it has no marginal rate."""
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    assert hass.states.get(f"{GAS}_current_all_in_rate") is None
