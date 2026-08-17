@@ -346,3 +346,101 @@ def test_every_sensor_has_a_translated_name():
 
     assert described, "no descriptions were collected"
     assert described <= translated, f"untranslated: {sorted(described - translated)}"
+
+
+async def test_natural_gas_charge_sensors(hass, init_integration):
+    """The bill lines a gas customer is most likely to want, enabled."""
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    registry = er.async_get(hass)
+    enabled = {
+        entry.entity_id.removeprefix(f"{GAS}_")
+        for entry in registry.entities.values()
+        if not entry.disabled and entry.entity_id.startswith(f"{GAS}_")
+    }
+
+    assert enabled == {
+        "current_rate",
+        "monthly_charge",
+        "transportation_charge",
+        "federal_carbon_charge",
+        "facility_carbon_charge",
+        "storage_charge",
+        "effective_date",
+    }
+
+    assert float(hass.states.get(f"{GAS}_monthly_charge").state) == pytest.approx(27.69)
+    assert float(
+        hass.states.get(f"{GAS}_transportation_charge").state
+    ) == pytest.approx(0.054267)
+
+
+async def test_gas_effective_date_is_parsed_as_a_date(hass, init_integration):
+    """The OEB ships it as an ISO string; a date sensor needs a date."""
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    state = hass.states.get(f"{GAS}_effective_date")
+
+    assert state.state == "2026-07-01"
+    assert state.attributes["device_class"] == "date"
+
+
+async def test_gas_delivery_tiers_ship_disabled(hass, init_integration):
+    """Delivery is banded by consumption, so it has no single value.
+
+    Both the per-tier prices and their boundaries are published, and the
+    arithmetic is left to the reader.
+    """
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    registry = er.async_get(hass)
+    disabled = {
+        entry.entity_id.removeprefix(f"{GAS}_")
+        for entry in registry.entities.values()
+        if entry.disabled and entry.entity_id.startswith(f"{GAS}_")
+    }
+
+    for tier in range(1, 6):
+        assert f"delivery_charge_tier_{tier}" in disabled
+        assert f"delivery_tier_{tier}_start" in disabled
+        assert f"delivery_tier_{tier}_end" in disabled
+
+    assert "gas_supply_charge_price_adjustment" in disabled
+    assert "harmonized_sales_tax" in disabled
+
+
+async def test_gas_delivery_values_when_enabled(
+    hass, init_integration, enable_all_entities
+):
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    assert float(
+        hass.states.get(f"{GAS}_delivery_charge_tier_1").state
+    ) == pytest.approx(0.143745)
+    assert float(hass.states.get(f"{GAS}_delivery_tier_1_end").state) == pytest.approx(
+        30
+    )
+    # Adjustments can be negative.
+    assert float(
+        hass.states.get(f"{GAS}_gas_supply_charge_price_adjustment").state
+    ) == pytest.approx(-0.012527)
+
+
+async def test_monthly_usage_averages_are_not_entities(hass, init_integration):
+    """January-December are the OEB's typical-consumption assumptions.
+
+    They describe a notional customer, not this one's rates, so they stay in
+    XML_KEY_MAPPINGS for the schema check without becoming twelve sensors.
+    """
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    registry = er.async_get(hass)
+    entity_ids = {entry.entity_id for entry in registry.entities.values()}
+
+    for month in ("january", "june", "december"):
+        assert f"{GAS}_{month}" not in entity_ids

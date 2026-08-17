@@ -7,6 +7,7 @@ than a new class.
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from datetime import date
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -15,7 +16,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfEnergy
+from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -131,6 +132,49 @@ def _rate(
     )
 
 
+def _gas_rate(
+    key: str, translation_key: str, **kwargs
+) -> OntarioEnergyBoardSensorEntityDescription:
+    """A price per cubic metre."""
+    return OntarioEnergyBoardSensorEntityDescription(
+        key=translation_key,
+        translation_key=translation_key,
+        native_unit_of_measurement=NATURAL_GAS_RATE_UNIT_OF_MEASURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=6,
+        value_fn=_numeric(key),
+        **kwargs,
+    )
+
+
+def _volume(
+    key: str, translation_key: str
+) -> OntarioEnergyBoardSensorEntityDescription:
+    """A tier boundary, expressed as a consumption threshold."""
+    return OntarioEnergyBoardSensorEntityDescription(
+        key=translation_key,
+        translation_key=translation_key,
+        native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+        suggested_display_precision=0,
+        value_fn=_numeric(key),
+    )
+
+
+def _effective_date(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> date | None:
+    """Parse the date these rates took effect, which arrives as an ISO string."""
+    value = coordinator.company_data.get("effective_date")
+
+    if not isinstance(value, str):
+        return None
+
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 def _as_diagnostic(
     description: OntarioEnergyBoardSensorEntityDescription,
 ) -> OntarioEnergyBoardSensorEntityDescription:
@@ -140,6 +184,13 @@ def _as_diagnostic(
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     )
+
+
+def _as_shown_diagnostic(
+    description: OntarioEnergyBoardSensorEntityDescription,
+) -> OntarioEnergyBoardSensorEntityDescription:
+    """Group a sensor under the device's diagnostics, but leave it enabled."""
+    return replace(description, entity_category=EntityCategory.DIAGNOSTIC)
 
 
 CURRENT_RATE_ELECTRICITY = OntarioEnergyBoardSensorEntityDescription(
@@ -158,7 +209,7 @@ CURRENT_RATE_NATURAL_GAS = OntarioEnergyBoardSensorEntityDescription(
     translation_key="current_rate",
     native_unit_of_measurement=NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     state_class=SensorStateClass.MEASUREMENT,
-    suggested_display_precision=5,
+    suggested_display_precision=6,
     value_fn=_current_rate,
     use_entry_unique_id=True,
 )
@@ -279,6 +330,64 @@ ELECTRICITY_DIAGNOSTIC_SENSORS = (
 )
 
 
+# The bill lines a gas customer is most likely to want, grouped under the
+# device's diagnostics but left enabled.
+NATURAL_GAS_CHARGE_SENSORS = (
+    OntarioEnergyBoardSensorEntityDescription(
+        key="monthly_charge",
+        translation_key="monthly_charge",
+        native_unit_of_measurement=CURRENCY_UNIT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_numeric("monthly_charge"),
+    ),
+    _gas_rate("transportation_charge", "transportation_charge"),
+    _gas_rate("federal_carbon_charge", "federal_carbon_charge"),
+    _gas_rate("facility_carbon_charge", "facility_carbon_charge"),
+    _gas_rate("storage_charge", "storage_charge"),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="effective_date",
+        translation_key="effective_date",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=_effective_date,
+    ),
+)
+
+# Delivery is banded by consumption, so there is no single delivery charge
+# without knowing usage. Both the per-tier prices and their boundaries are
+# published, and the arithmetic is left to the reader.
+NATURAL_GAS_DELIVERY_SENSORS = tuple(
+    description
+    for tier in range(1, 6)
+    for description in (
+        _gas_rate(f"delivery_charge_tier_{tier}", f"delivery_charge_tier_{tier}"),
+        _volume(f"delivery_tier_{tier}_start", f"delivery_tier_{tier}_start"),
+        _volume(f"delivery_tier_{tier}_end", f"delivery_tier_{tier}_end"),
+    )
+)
+
+NATURAL_GAS_DIAGNOSTIC_SENSORS = (
+    *NATURAL_GAS_DELIVERY_SENSORS,
+    _gas_rate("delivery_charge_price_adjustment", "delivery_charge_price_adjustment"),
+    _gas_rate("storage_charge_price_adjustment", "storage_charge_price_adjustment"),
+    _gas_rate(
+        "gas_supply_charge_price_adjustment", "gas_supply_charge_price_adjustment"
+    ),
+    _gas_rate(
+        "transportation_charge_price_adjustment",
+        "transportation_charge_price_adjustment",
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="harmonized_sales_tax",
+        translation_key="harmonized_sales_tax",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=_percentage("harmonized_sales_tax"),
+    ),
+)
+
+
 def _active_peak_description(
     options: list[str],
 ) -> OntarioEnergyBoardSensorEntityDescription:
@@ -298,7 +407,17 @@ def descriptions_for(
     """Pick the sensors that make sense for this entry's sector and plan."""
     if coordinator.energy_sector != SECTOR_ELECTRICITY:
         # Gas has no peak periods and no seasonal schedule.
-        return [CURRENT_RATE_NATURAL_GAS]
+        return [
+            CURRENT_RATE_NATURAL_GAS,
+            *(
+                _as_shown_diagnostic(description)
+                for description in NATURAL_GAS_CHARGE_SENSORS
+            ),
+            *(
+                _as_diagnostic(description)
+                for description in NATURAL_GAS_DIAGNOSTIC_SENSORS
+            ),
+        ]
 
     peak_options = ULO_PEAK_OPTIONS if coordinator.ulo_enabled else TOU_PEAK_OPTIONS
 
