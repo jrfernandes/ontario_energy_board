@@ -6,7 +6,9 @@
 [![OEB Coverage](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml)
 
 
-This [Home Assistant](https://home-assistant.io/) component installs a sensor with the current energy rate and active peak for Ontario, Canada based energy companies (Electricity and Natural Gas), using the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
+This [Home Assistant](https://home-assistant.io/) component adds a device for your Ontario, Canada energy company (Electricity or Natural Gas), with sensors for the current rate, the active peak period, and the individual charges that make up your bill. Rates come from the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
+
+The current rate sensor can drive cost tracking in Home Assistant's Energy dashboard, following the Time-of-Use or Ultra-Low Overnight schedule through the day.
 
 ## Electricity
 ![Electricity Sensor Preview](assets/electricity-sensor-preview.png)
@@ -31,6 +33,158 @@ Clone or download the repo, and copy the "ontario_energy_board" folder in "custo
 Once installed, use the UI to add the new component to your setup, or click on the button below:
 
 [![AA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start?domain=ontario_energy_board)
+
+
+# Entities
+
+Each configured company becomes a **device** carrying its own entities. The
+default set is deliberately small; everything else is created as a disabled
+diagnostic, so you can enable exactly what you need from the device page
+without carrying entities you will never look at.
+
+**Current rate** is the one to put on a dashboard. It follows the Time-of-Use
+or Ultra-Low Overnight schedule automatically, including Ontario holidays.
+
+## Cost tracking in the Energy dashboard
+
+`Current rate` is shaped so Home Assistant can use it as a price source. In
+**Settings → Dashboards → Energy**, edit your electricity or gas consumption
+source, choose *Use an entity with current price*, and select it. Costs then
+follow the peak schedule through the day rather than assuming a flat rate.
+
+## Upgrading from 0.x
+
+Version 1.0.0 replaces the single sensor and its attributes with a device and
+individual entities.
+
+- **The state attributes are gone.** Anything using
+  `state_attr('sensor.…', 'off_peak_rate')` needs to move to the matching
+  entity. Some ship disabled; enable them from the device page.
+- **Your existing rate sensor survives.** It keeps its entity ID and its
+  history, and becomes `Current rate`. Its friendly name changes.
+- **`device_class: monetary` was removed** from it. That device class means
+  *an amount of money* and expects a total state class, which a price per kWh
+  is not. Rates now carry `state_class: measurement`, so they finally produce
+  long-term statistics.
+- **The natural gas unit changed** from `CA ¢/m³` to `CAD/m³`. The numbers were
+  always dollars, so the old label was wrong by a factor of 100. Home Assistant
+  may ask about the unit change on existing statistics.
+- **Entities now belong to a device**, so they are grouped under it rather than
+  appearing loose.
+
+## Available entities
+
+#### Electricity — Time-of-Use
+
+| Entity | On by default | Unit | OEB key |
+|:--|:--|:--|:--|
+| Current rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
+| Active peak | **yes** | `—` | `—` |
+| Season | **yes** | `—` | `—` |
+| Off-peak rate | **yes** | `CAD/kWh` | `RPPOffP` |
+| Mid-peak rate | **yes** | `CAD/kWh` | `RPPMidP` |
+| On-peak rate | **yes** | `CAD/kWh` | `RPPOnP` |
+| ULO overnight rate | no | `CAD/kWh` | `ULO_overnight` |
+| ULO weekend off-peak rate | no | `CAD/kWh` | `ULO_weekendoffp` |
+| ULO mid-peak rate | no | `CAD/kWh` | `ULO_midp` |
+| ULO on-peak rate | no | `CAD/kWh` | `ULO_onp` |
+| Distribution variable charge | no | `CAD/kWh` | `DC` |
+| Distribution volumetric charge | no | `CAD/kWh` | `VC` |
+| Other volumetric charges | no | `CAD/kWh` | `OC` |
+| Global adjustment | no | `CAD/kWh` | `PBGA` |
+| Global adjustment rate rider | no | `CAD/kWh` | `GA_RR_NONRPP` |
+| Transmission network rate | no | `CAD/kWh` | `Net` |
+| Transmission connection rate | no | `CAD/kWh` | `Conn` |
+| Wholesale market service charge | no | `CAD/kWh` | `WMSR` |
+| Rural and remote rate protection | no | `CAD/kWh` | `RRRP` |
+| Debt retirement charge | no | `CAD/kWh` | `DRC` |
+| Lower tier price | no | `CAD/kWh` | `RPP1` |
+| Higher tier price | no | `CAD/kWh` | `RPP2` |
+| Monthly service charge | no | `CAD` | `SC` |
+| Standard supply service charge | no | `CAD` | `SSS` |
+| Other fixed charges | no | `CAD` | `OFC` |
+| Distribution rate protection rate | no | `CAD` | `DRP_Rate` |
+| Harmonized sales tax | no | `%` | `GST` |
+| Ontario electricity rebate | no | `%` | `Rebate` |
+| Tier threshold | no | `kWh` | `ET1` |
+| Loss factor | no | `—` | `LF` |
+| Rate year | no | `—` | `YEAR` |
+| Distribution rate protection | no | `—` | `DRP` |
+
+#### Electricity — Ultra-Low Overnight
+
+| Entity | On by default | Unit | OEB key |
+|:--|:--|:--|:--|
+| Current rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
+| Active peak | **yes** | `—` | `—` |
+| ULO overnight rate | **yes** | `CAD/kWh` | `ULO_overnight` |
+| ULO weekend off-peak rate | **yes** | `CAD/kWh` | `ULO_weekendoffp` |
+| ULO mid-peak rate | **yes** | `CAD/kWh` | `ULO_midp` |
+| ULO on-peak rate | **yes** | `CAD/kWh` | `ULO_onp` |
+| Off-peak rate | no | `CAD/kWh` | `RPPOffP` |
+| Mid-peak rate | no | `CAD/kWh` | `RPPMidP` |
+| On-peak rate | no | `CAD/kWh` | `RPPOnP` |
+| Distribution variable charge | no | `CAD/kWh` | `DC` |
+| Distribution volumetric charge | no | `CAD/kWh` | `VC` |
+| Other volumetric charges | no | `CAD/kWh` | `OC` |
+| Global adjustment | no | `CAD/kWh` | `PBGA` |
+| Global adjustment rate rider | no | `CAD/kWh` | `GA_RR_NONRPP` |
+| Transmission network rate | no | `CAD/kWh` | `Net` |
+| Transmission connection rate | no | `CAD/kWh` | `Conn` |
+| Wholesale market service charge | no | `CAD/kWh` | `WMSR` |
+| Rural and remote rate protection | no | `CAD/kWh` | `RRRP` |
+| Debt retirement charge | no | `CAD/kWh` | `DRC` |
+| Lower tier price | no | `CAD/kWh` | `RPP1` |
+| Higher tier price | no | `CAD/kWh` | `RPP2` |
+| Monthly service charge | no | `CAD` | `SC` |
+| Standard supply service charge | no | `CAD` | `SSS` |
+| Other fixed charges | no | `CAD` | `OFC` |
+| Distribution rate protection rate | no | `CAD` | `DRP_Rate` |
+| Harmonized sales tax | no | `%` | `GST` |
+| Ontario electricity rebate | no | `%` | `Rebate` |
+| Tier threshold | no | `kWh` | `ET1` |
+| Loss factor | no | `—` | `LF` |
+| Rate year | no | `—` | `YEAR` |
+| Distribution rate protection | no | `—` | `DRP` |
+
+#### Natural gas
+
+| Entity | On by default | Unit | OEB key |
+|:--|:--|:--|:--|
+| Current rate | **yes** | `CAD/m³` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
+| Monthly charge | **yes** | `CAD` | `MC` |
+| Transportation charge | **yes** | `CAD/m³` | `TC` |
+| Federal carbon charge | **yes** | `CAD/m³` | `FedCC` |
+| Facility carbon charge | **yes** | `CAD/m³` | `FacCC` |
+| Storage charge | **yes** | `CAD/m³` | `SC` |
+| Effective date | **yes** | `—` | `ED` |
+| Delivery charge tier 1 | no | `CAD/m³` | `DCT1` |
+| Delivery tier 1 start | no | `m³` | `DT1Low` |
+| Delivery tier 1 end | no | `m³` | `DT1High` |
+| Delivery charge tier 2 | no | `CAD/m³` | `DCT2` |
+| Delivery tier 2 start | no | `m³` | `DT2Low` |
+| Delivery tier 2 end | no | `m³` | `DT2High` |
+| Delivery charge tier 3 | no | `CAD/m³` | `DCT3` |
+| Delivery tier 3 start | no | `m³` | `DT3Low` |
+| Delivery tier 3 end | no | `m³` | `DT3High` |
+| Delivery charge tier 4 | no | `CAD/m³` | `DCT4` |
+| Delivery tier 4 start | no | `m³` | `DT4Low` |
+| Delivery tier 4 end | no | `m³` | `DT4High` |
+| Delivery charge tier 5 | no | `CAD/m³` | `DCT5` |
+| Delivery tier 5 start | no | `m³` | `DT5Low` |
+| Delivery tier 5 end | no | `m³` | `DT5High` |
+| Delivery charge price adjustment | no | `CAD/m³` | `DCPA` |
+| Storage charge price adjustment | no | `CAD/m³` | `SCPA` |
+| Gas supply charge price adjustment | no | `CAD/m³` | `CMPA` |
+| Transportation charge price adjustment | no | `CAD/m³` | `TCPA` |
+| Harmonized sales tax | no | `%` | `GST` |
+
+### Not exposed as entities
+
+Four `ULO_*_period` values (fractions of a day), the three `EOffP`/`EMidP`/`EOnP`
+usage percentages, and the twelve monthly gas averages are consumption
+assumptions and schedule metadata rather than prices. They stay in
+`XML_KEY_MAPPINGS` so `oeb_validation.py` keeps checking them against the feed.
 
 
 # Development
@@ -97,7 +251,9 @@ readable; take the same shape when refreshing it.
 ## Adding a new OEB data point
 
 1. Add the XML key to `XML_KEY_MAPPINGS` in `const.py`.
-2. Add a row to the attribute table below.
+2. If it is a price, charge or rate, add a `SensorEntityDescription` for it in
+   `sensor.py` and a name for its `translation_key` in `strings.json`.
+3. Add a row to the entity table above.
 
 `oeb_validation.py` runs nightly in CI against the live feeds and fails if the
 two ever drift apart, so a new upstream field shows up as a red build without
@@ -134,91 +290,3 @@ Note that `.vscode/` is git-ignored apart from the four shared workspace files,
 so personal editor state stays out of the repo.
 
 
-### Attributes
-
-The sensor will include extra attributes for most of the available data from your energy supplier, enabling you to replicate your hydro and or natural gas bill if needed. @Digital-Ark [shared](https://github.com/jrfernandes/ontario_energy_board/issues/10#issuecomment-1242147422) this great [Google Sheets](https://docs.google.com/spreadsheets/d/14pV23ip7UQH6B72HYhsWEpsCbo_X1aII/) document containing the billing formula using the attributes extracted by this integration:
-
-| Attribute                                | Sector                    | OEB Key        | Unit         | Description                                                                |
-|:-----------------------------------------|:--------------------------|:---------------|:-------------|:---------------------------------------------------------------------------|
-| `energy_company`                         | Electricity / Natural Gas |                |              | Energy company name                                                        |
-| `energy_sector`                          | Electricity / Natural Gas |                |              | Energy sector (`electricity` / `natural_gas`)                              |
-| `active_peak`                            | Electricity / Natural Gas |                |              | Active Peak (No Peak - Natural Gas)                                        |
-| `season`                                 | Electricity / Natural Gas |                |              | Current Season (`winter` or `summer`)                                      |
-| `ulo_enabled`                            | Electricity               |                |              | ULO Rates status                                                           |
-| `ulo_overnight_rate`                     | Electricity               |                | CA$/kWh      | ULO Overnight Rate                                                         |
-| `ulo_off_peak_rate`                      | Electricity               |                | CA$/kWh      | ULO Weekend Off-peak Rate                                                  |
-| `ulo_mid_peak_rate`                      | Electricity               |                | CA$/kWh      | ULO Mid-peak Rate                                                          |
-| `ulo_on_peak_rate`                       | Electricity               |                | CA$/kWh      | ULO On-peak Rate                                                           |
-| `off_peak_rate`                          | Electricity               |                | CA$/kWh      | Off-peak Rate                                                              |
-| `mid_peak_rate`                          | Electricity               |                | CA$/kWh      | Mid-peak Rate                                                              |
-| `on_peak_rate`                           | Electricity               |                | CA$/kWh      | On-peak Rate                                                               |
-| `distributor_name`                       | Electricity               | `Dist`         |              | Distributor name                                                           |
-| `rate_class`                             | Electricity               | `Class`        |              | Rate class                                                                 |
-| `rate_year`                              | Electricity               | `YEAR`         |              | Rate year                                                                  |
-| `tier_threshold`                         | Electricity               | `ET1`          | kWh          | Tier Threshold                                                             |
-| `lower_tier_price`                       | Electricity               | `RPP1`         | CA$/kWh      | Tier lower price                                                           |
-| `higher_tier_price`                      | Electricity               | `RPP2`         | CA$/kWh      | Tier higher price                                                          |
-| `monthly_fixed_charge`                   | Electricity               | `SC`           | CA$/kWh      | Service Charge (monthly fixed charge)                                      |
-| `distribution_variable_charge`           | Electricity               | `DC`           | CA$/kWh      | Distribution variable charge                                               |
-| `global_adjustment_rate_rider`           | Electricity               | `GA_RR_NONRPP` | CA$/kWh      | Global adjustment rate rider                                               |
-| `retail_transmission_network_rate`       | Electricity               | `Net`          | CA$/kWh      | Retail transmission network rate                                           |
-| `retail_transmission_connection_rate`    | Electricity               | `Conn`         | CA$/kWh      | Retail transmission connection rate                                        |
-| `wholesale_market_service_charge`        | Electricity               | `WMSR`         | CA$/kWh      | Wholesale market service charge                                            |
-| `rural_remote_rate_protection`           | Electricity               | `RRRp`         | CA$/kWh      | Rural and Remote rate protection                                           |
-| `standard_supply_service_charge`         | Electricity               | `SSS`          | CA$          | Standard supply service charge                                             |
-| `loss_factor`                            | Electricity               | `LF`           | CA$/kWh      | Loss factor                                                                |
-| `harmonized_sales_tax`                   | Electricity / Natural Gas | `GST`          | %            | Harmonized sales tax (HST)                                                 |
-| `time_of_use_off_peak_usage`             | Electricity               | `EOffP`        | %            | Time-of-use off-peak usage (average across residential consumers)          |
-| `time_of_use_mid_peak_usage`             | Electricity               | `EMidP`        | %            | Time-of-use mid-peak usage (average across residential consumers)          |
-| `time_of_use_on_peak_usage`              | Electricity               | `EOnP`         | %            | Time-of-use on-peak usage (average across residential consumers)           |
-| `time_of_use_off_peak_price`             | Electricity               | `RPPOffP`      | CA$/kWh      | Time-of-use off-peak price                                                 |
-| `time_of_use_mid_peak_price`             | Electricity               | `RPPMidP`      | CA$/kWh      | Time-of-use mid-peak price                                                 |
-| `time_of_use_on_peak_price`              | Electricity               | `RPPOnP`       | CA$/kWh      | Time-of-use on-peak price                                                  |
-| `global_adjustment`                      | Electricity               | `PBGA`         | CA$/kWh      | Global adjustment                                                          |
-| `ontario_electricity_rebate`             | Electricity               | `Rebate`       | %            | Ontario electricity rebate (% of subtotal)                                 |
-| `other_fixed_charges`                    | Electricity               | `OFC`          | CA$/customer | Other fixed charges                                                        |
-| `distribution_volumetric_charge`         | Electricity               | `VC`           | CA$/kWh      | Distribution volumetric charge                                             |
-| `other_volumetric_charge`                | Electricity               | `OC`           | CA$/kWh      | Other volumetric charge                                                    |
-| `distribution_rate_protection`           | Electricity               | `DRP`          | Boolean      | Distribution rate protection (0 - no / 1 - yes)                            |
-| `debt_retirement_charge`                 | Electricity               | `DRC`          | CA$/kWh      | Debt retirement charge                                                     |
-| `distribution_rate_protection_rate`      | Electricity               | `DRP_Rate`     | CA$/customer | Distribution rate protection rate                                          |
-| `service_area`                           | Natural Gas               | `SA`           |              | Service area                                                               |
-| `rate_class`                             | Natural Gas               | `RC`           |              | Rate class                                                                 |
-| `effective_date`                         | Natural Gas               | `ED`           |              | Effective Date                                                             |
-| `monthly_charge`                         | Natural Gas               | `MC`           | CA$/month    | Monthly charge                                                             |
-| `delivery_tier_1_start`                  | Natural Gas               | `DT1Low`       | m³           | Delivery tier 1 start                                                      |
-| `delivery_tier_1_end`                    | Natural Gas               | `DT1High`      | m³           | Delivery tier 1 end                                                        |
-| `delivery_tier_2_start`                  | Natural Gas               | `DT2Low`       | m³           | Delivery tier 2 start                                                      |
-| `delivery_tier_2_end`                    | Natural Gas               | `DT2High`      | m³           | Delivery tier 2 end                                                        |
-| `delivery_tier_3_start`                  | Natural Gas               | `DT3Low`       | m³           | Delivery tier 3 start                                                      |
-| `delivery_tier_3_end`                    | Natural Gas               | `DT3High`      | m³           | Delivery tier 3 end                                                        |
-| `delivery_tier_4_start`                  | Natural Gas               | `DT4Low`       | m³           | Delivery tier 4 start                                                      |
-| `delivery_tier_4_end`                    | Natural Gas               | `DT4High`      | m³           | Delivery tier 4 end                                                        |
-| `delivery_tier_5_start`                  | Natural Gas               | `DT5Low`       | m³           | Delivery tier 5 start                                                      |
-| `delivery_tier_5_end`                    | Natural Gas               | `DT5High`      | m³           | Delivery tier 5 end                                                        |
-| `delivery_charge_tier_1`                 | Natural Gas               | `DCT1`         | CA$/m³       | Delivery charge tier 1                                                     |
-| `delivery_charge_tier_2`                 | Natural Gas               | `DCT2`         | CA$/m³       | Delivery charge tier 2                                                     |
-| `delivery_charge_tier_3`                 | Natural Gas               | `DCT3`         | CA$/m³       | Delivery charge tier 3                                                     |
-| `delivery_charge_tier_4`                 | Natural Gas               | `DCT4`         | CA$/m³       | Delivery charge tier 4                                                     |
-| `delivery_charge_tier_5`                 | Natural Gas               | `DCT5`         | CA$/m³       | Delivery charge tier 5                                                     |
-| `delivery_charge_price_adjustment`       | Natural Gas               | `DCPA`         | CA$/m³       | Delivery charge price adjustment                                           |
-| `storage_charge`                         | Natural Gas               | `SC`           | CA$/m³       | Storage charge                                                             |
-| `storage_charge_price_adjustment`        | Natural Gas               | `SCPA`         | CA$/m³       | Storage charge price adjustment                                            |
-| `gas_supply_charge`                      | Natural Gas               | `CM`           | CA$/m³       | Gas supply charge                                                          |
-| `gas_supply_charge_price_adjustment`     | Natural Gas               | `CMPA`         | CA$/m³       | Gas supply charge price adjustment                                         |
-| `transportation_charge`                  | Natural Gas               | `TC`           | CA$/m³       | Transportation charge                                                      |
-| `transportation_charge_price_adjustment` | Natural Gas               | `TCPA`         | CA$/m³       | Transportation charge price sdjustment                                     |
-| `federal_carbon_charge`                  | Natural Gas               | `FedCC`        | CA$/m³       | Federal carbon charge                                                      |
-| `facility_carbon_charge`                 | Natural Gas               | `FacCC`        | CA$/m³       | Facility carbon charge                                                     |
-| `january`                                | Natural Gas               | `Jan`          | ~ m³         | January (average monthly usage)                                            |
-| `february`                               | Natural Gas               | `Feb`          | ~ m³         | February (average monthly usage)                                           |
-| `march`                                  | Natural Gas               | `Mar`          | ~ m³         | March (average monthly usage)                                              |
-| `april`                                  | Natural Gas               | `Apr`          | ~ m³         | April (average monthly usage)                                              |
-| `may`                                    | Natural Gas               | `May`          | ~ m³         | May (average monthly usage)                                                |
-| `june`                                   | Natural Gas               | `Jun`          | ~ m³         | June (average monthly usage)                                               |
-| `july`                                   | Natural Gas               | `Jul`          | ~ m³         | July (average monthly usage)                                               |
-| `august`                                 | Natural Gas               | `Aug`          | ~ m³         | August (average monthly usage)                                             |
-| `september`                              | Natural Gas               | `Sep`          | ~ m³         | September (average monthly usage)                                          |
-| `october`                                | Natural Gas               | `Oct`          | ~ m³         | October (average monthly usage)                                            |
-| `november`                               | Natural Gas               | `Nov`          | ~ m³         | November (average monthly usage)                                           |
-| `december`                               | Natural Gas               | `Dec`          | ~ m³         | December (average monthly usage)                                           |
