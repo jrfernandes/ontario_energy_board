@@ -35,7 +35,7 @@ _LOGGER: Final = logging.getLogger(__name__)
 class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Ontario Energy Board."""
 
-    VERSION = 2
+    VERSION = 3
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -74,13 +74,9 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # id matches entries created before the sector was chosen first.
             ulo_enabled = user_input.get(CONF_ULO_ENABLED, False)
 
-            await self.async_set_unique_id(f"{energy_company} {ulo_enabled}")
-            self._abort_if_unique_id_configured()
-
-            # The unique id records the plan chosen at setup, and cannot change
-            # afterwards without orphaning every entity derived from it. An
-            # entry whose plan was later corrected from the options therefore
-            # has to be compared on its current plan, not on its id.
+            # Entries carry no unique id: the company and the rate plan can
+            # both change, so neither can identify an entry for its lifetime.
+            # Duplicates are judged on what an entry currently holds instead.
             if any(
                 entry.data[CONF_ENERGY_COMPANY] == energy_company
                 and effective_ulo_enabled(entry) == ulo_enabled

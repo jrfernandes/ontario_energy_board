@@ -107,24 +107,21 @@ async def test_creates_an_electricity_entry(hass, mock_oeb, enable_custom_integr
         CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY,
         CONF_ULO_ENABLED: True,
     }
-    assert result["result"].unique_id == f"{ELECTRICITY_COMPANY} True"
+    # Neither the company nor the plan identifies an entry, since both can
+    # change; the entry id does that instead.
+    assert result["result"].unique_id is None
 
 
-async def test_natural_gas_keeps_the_established_unique_id(
+async def test_natural_gas_still_records_the_plan(
     hass, mock_oeb, enable_custom_integrations
 ):
-    """Gas is never asked about the plan, but still records it as False.
-
-    Its unique id is "<company> False", the same as an entry created before the
-    sector was chosen first. Dropping the value would orphan existing entries.
-    """
+    """Gas is never asked, but the value is still stored for the coordinator."""
     result = await _choose_sector(hass, "natural_gas")
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENERGY_COMPANY: NATURAL_GAS_COMPANY}
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == f"{NATURAL_GAS_COMPANY} False"
     assert result["data"][CONF_ULO_ENABLED] is False
 
 
@@ -141,7 +138,6 @@ async def test_same_company_with_different_rate_plans_is_allowed(
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == f"{ELECTRICITY_COMPANY} True"
 
 
 async def test_duplicate_entry_is_rejected(hass, mock_oeb, enable_custom_integrations):
@@ -215,9 +211,8 @@ async def test_options_flow_changes_the_rate_plan(
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_ULO_ENABLED] is True
-    # The setup value is left alone, so the unique id still matches it.
+    # The value chosen at setup is left alone; the option overrides it.
     assert entry.data[CONF_ULO_ENABLED] is False
-    assert entry.unique_id == f"{ELECTRICITY_COMPANY} False"
 
 
 async def test_options_flow_is_not_offered_for_natural_gas(
@@ -264,16 +259,14 @@ async def test_a_plan_changed_from_the_options_still_blocks_a_duplicate(
     assert result["reason"] == "already_configured"
 
 
-async def test_a_changed_plan_cannot_regain_its_original_plan(
+async def test_the_original_plan_can_be_added_again_after_a_change(
     hass, mock_oeb, ontario_timezone, enable_custom_integrations
 ):
-    """Known limitation, pinned so it is a decision rather than a surprise.
+    """An entry moved to ULO leaves Time-of-Use genuinely free again.
 
-    The unique id records the plan chosen at setup and cannot change without
-    orphaning every entity derived from it. An entry set up on Time-of-Use and
-    later corrected to ULO therefore still occupies "<company> False", so
-    adding a Time-of-Use entry for that company is refused. Changing the option
-    back is the way out.
+    While the unique id encoded the plan chosen at setup, it kept occupying
+    "<company> False" after the plan changed, and blocked this. Entries carry
+    no unique id now, so the check reflects what is actually configured.
     """
     entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
     entry.add_to_hass(hass)
@@ -292,5 +285,4 @@ async def test_a_changed_plan_cannot_regain_its_original_plan(
         {CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY, CONF_ULO_ENABLED: False},
     )
 
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
+    assert result["type"] is FlowResultType.CREATE_ENTRY

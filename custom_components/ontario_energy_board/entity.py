@@ -37,13 +37,10 @@ class OntarioEnergyBoardEntity(
 
         entry = coordinator.config_entry
 
-        # The rate that existed before this integration grew a device keeps the
-        # config entry's own unique id, so its history and entity id survive.
-        self._attr_unique_id = (
-            entry.unique_id
-            if getattr(description, "use_entry_unique_id", False)
-            else f"{entry.unique_id}_{description.key}"
-        )
+        # Derived from the entry id, which is assigned once and never changes.
+        # The company and the rate plan both can change, so neither can be part
+        # of an entity's identity without orphaning it later.
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
