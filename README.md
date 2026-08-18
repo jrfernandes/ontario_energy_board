@@ -14,12 +14,6 @@ This [Home Assistant](https://home-assistant.io/) component adds a device for yo
 
 The current rate sensor can drive cost tracking in Home Assistant's Energy dashboard, following the Time-of-Use or Ultra-Low Overnight schedule through the day.
 
-## Electricity
-![Electricity Sensor Preview](assets/electricity-sensor-preview.png)
-
-## Natural Gas
-![Natural Gas Sensor Preview](assets/natural-gas-sensor-preview.png)
-
 
 # Installation
 
@@ -109,33 +103,6 @@ name. The likely successor is pre-selected, but check it before saving: rate
 zones have similar names and genuinely different delivery charges. Doing this
 keeps your sensors and their history; deleting and re-adding the entry would
 not.
-
-## Upgrading from 0.x
-
-Version 1.0.0 replaces the single sensor and its attributes with a device and
-individual entities.
-
-- **The state attributes are gone.** Anything using
-  `state_attr('sensor.…', 'off_peak_rate')` needs to move to the matching
-  entity. Some ship disabled; enable them from the device page.
-- **Your existing rate sensor survives.** It keeps its entity ID and its
-  history, and becomes `Current rate`. Its friendly name changes.
-- **`device_class: monetary` was removed** from it. That device class means
-  *an amount of money* and expects a total state class, which a price per kWh
-  is not. Rates now carry `state_class: measurement`, so they finally produce
-  long-term statistics.
-- **The natural gas unit changed** from `CA ¢/m³` to `CAD/m³`. The numbers were
-  always dollars, so the old label was wrong by a factor of 100. Home Assistant
-  may ask about the unit change on existing statistics.
-- **Entities now belong to a device**, so they are grouped under it rather than
-  appearing loose.
-- **Config entries are re-keyed automatically.** Entries used to be identified
-  by company name and rate plan, both of which can change. They are now
-  identified by something that cannot, and existing entities are renamed in
-  place on upgrade, keeping their entity IDs and history. Nothing to do.
-
-Nothing here needs a delete-and-re-add. If you find something that does, that
-is a bug worth reporting.
 
 ## Available entities
 
