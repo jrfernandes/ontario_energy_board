@@ -30,7 +30,6 @@ from .const import (
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
     PEAK_KEY_MAPPINGS,
-    SCAN_INTERVAL,
     SEASON_OPTIONS,
     SECTOR_ELECTRICITY,
     STATE_SUMMER,
@@ -40,9 +39,6 @@ from .const import (
 )
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 from .entity import OntarioEnergyBoardEntity
-
-# Home Assistant reads the poll interval off the platform module itself.
-__all__ = ["SCAN_INTERVAL", "async_setup_entry"]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -583,11 +579,6 @@ class OntarioEnergyBoardSensor(OntarioEnergyBoardEntity, SensorEntity):
     """A single value published by the Ontario Energy Board."""
 
     entity_description: OntarioEnergyBoardSensorEntityDescription
-
-    @property
-    def should_poll(self) -> bool:
-        """Poll only the values that change with the clock rather than the data."""
-        return self.entity_description.clock_dependent
 
     @property
     def native_value(self) -> StateType:

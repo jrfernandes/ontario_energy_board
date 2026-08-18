@@ -1,20 +1,21 @@
 """End-to-end tests for the sensor entities, driven through Home Assistant."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from freezegun import freeze_time
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_component import async_update_entity
 from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.util import dt as dt_util
 import pytest
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.ontario_energy_board.const import (
     CONF_ULO_ENABLED,
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
-    SCAN_INTERVAL,
     STATE_MID_PEAK,
     STATE_OFF_PEAK,
     STATE_ON_PEAK,
@@ -32,8 +33,8 @@ ELECTRICITY = "sensor.alectra_utilities_corporation_brampton_rate_zone_residenti
 GAS = "sensor.enbridge_gas_all"
 
 
-def ontario_moment(year, month, day, hour):
-    return datetime(year, month, day, hour, tzinfo=ONTARIO)
+def ontario_moment(year, month, day, hour, minute=0):
+    return datetime(year, month, day, hour, minute, tzinfo=ONTARIO)
 
 
 async def test_time_of_use_entry_creates_its_entities(hass, init_integration):
@@ -207,55 +208,6 @@ async def test_utc_instant_is_interpreted_in_ontario_time(hass, init_integration
 
     # If UTC leaked through, the hour would read as 17 and this would be on-peak.
     assert hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_MID_PEAK
-
-
-async def test_only_clock_dependent_entities_poll(hass, init_integration):
-    """Rate components change once a day, so polling them every minute is waste."""
-    with freeze_time(ontario_moment(2024, 1, 15, 12)):
-        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
-
-    sensor_platforms = [
-        platform
-        for platform in async_get_platforms(hass, DOMAIN)
-        if platform.domain == "sensor"
-    ]
-
-    assert sensor_platforms
-    assert all(p.scan_interval == SCAN_INTERVAL for p in sensor_platforms)
-
-    entities = [e for p in sensor_platforms for e in p.entities.values()]
-    polling = {e.entity_description.key for e in entities if e.should_poll}
-
-    assert polling == {
-        "current_rate",
-        "current_all_in_rate",
-        "active_peak",
-        "season",
-        "next_peak",
-        "next_peak_starts_at",
-        "next_peak_rate",
-        "next_peak_all_in_rate",
-    }
-
-    # The binary sensor tracks a flag that changes at most daily, so it has no
-    # reason to poll; it updates when the coordinator refreshes.
-    other = [
-        e
-        for platform in async_get_platforms(hass, DOMAIN)
-        if platform.domain != "sensor"
-        for e in platform.entities.values()
-    ]
-    assert not any(e.should_poll for e in other)
-
-
-def _keys(registry, *, disabled: bool) -> set[str]:
-    """Description keys of this device's entities, taken from their entity ids."""
-    return {
-        entry.entity_id.removeprefix(f"{ELECTRICITY}_")
-        for entry in registry.entities.values()
-        if bool(entry.disabled) is disabled
-        and entry.entity_id.startswith(f"{ELECTRICITY}_")
-    }
 
 
 async def test_period_rates_are_enabled_diagnostics(hass, init_integration):
@@ -637,3 +589,66 @@ async def test_natural_gas_has_no_next_peak_sensors(hass, init_integration):
 
     for key in ("next_peak", "next_peak_starts", "next_peak_rate"):
         assert hass.states.get(f"{GAS}_{key}") is None
+
+
+async def test_the_document_is_not_downloaded_every_minute(
+    hass, init_integration, mock_oeb
+):
+    """Rates change once a day; the clock changes constantly.
+
+    Polling would conflate the two. Home Assistant polls a coordinator entity
+    by asking the coordinator to refresh, so a one minute poll downloads the
+    document every minute.
+    """
+    start = ontario_moment(2024, 1, 15, 8)
+
+    with freeze_time(start) as frozen:
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+        after_setup = len(mock_oeb.mock_calls)
+
+        for minute in range(1, 11):
+            frozen.move_to(start + timedelta(minutes=minute))
+            async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=minute))
+            await hass.async_block_till_done()
+
+    assert after_setup == 1
+    assert len(mock_oeb.mock_calls) == 1, "the document was re-downloaded"
+
+
+async def test_the_peak_still_follows_the_clock_without_refetching(
+    hass, init_integration, mock_oeb
+):
+    """The point of the timer: values track the clock from cached data."""
+    start = ontario_moment(2024, 1, 15, 10, 58)
+
+    with freeze_time(start) as frozen:
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+        assert hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_ON_PEAK
+
+        # 11:00 is where winter on-peak becomes mid-peak.
+        for minute in range(1, 5):
+            frozen.move_to(start + timedelta(minutes=minute))
+            async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=minute))
+            await hass.async_block_till_done()
+
+        assert hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_MID_PEAK
+        assert float(
+            hass.states.get(f"{ELECTRICITY}_current_rate").state
+        ) == pytest.approx(0.157)
+
+    assert len(mock_oeb.mock_calls) == 1
+
+
+async def test_static_values_are_not_re_rendered_on_the_timer(
+    hass, init_integration, enable_all_entities
+):
+    """Only clock-derived values get a timer; the rest wait for a refresh."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    platforms = [p for p in async_get_platforms(hass, DOMAIN) if p.domain == "sensor"]
+    entities = [e for p in platforms for e in p.entities.values()]
+
+    # Nothing polls any more; the clock-derived values use a timer instead.
+    assert not any(e.should_poll for e in entities)
