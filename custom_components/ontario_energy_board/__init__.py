@@ -1,11 +1,14 @@
 """The Ontario Energy Board component."""
 
+from functools import partial
 import logging
 from typing import Final
 
+from holidays import country_holidays
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.setup import SetupPhases, async_pause_setup
 
 from .const import CONF_ULO_ENABLED, DOMAIN
 from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
@@ -15,11 +18,27 @@ _LOGGER: Final = logging.getLogger(__name__)
 PLATFORMS = [Platform.SENSOR]
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Ontario Energy Board component."""
     hass.data.setdefault(DOMAIN, {})
 
-    coordinator = OntarioEnergyBoardDataUpdateCoordinator(hass, config_entry)
+    # Importing `holidays` builds its data tables and is slow enough to block
+    # the event loop, so it is pushed to the import executor. Doing it here
+    # rather than in each platform keeps it to once per config entry.
+    with async_pause_setup(hass, SetupPhases.WAIT_IMPORT_PACKAGES):
+        ontario_holidays = await hass.async_add_import_executor_job(
+            partial(
+                country_holidays,
+                "CA",
+                subdiv="ON",
+                observed=True,
+                categories={"public", "optional"},
+            )
+        )
+
+    coordinator = OntarioEnergyBoardDataUpdateCoordinator(
+        hass, config_entry, ontario_holidays
+    )
 
     await coordinator.async_config_entry_first_refresh()
 

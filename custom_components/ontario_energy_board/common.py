@@ -61,6 +61,14 @@ def format_company_name(company_name, rate_class, energy_sector) -> str:
     return f"{company_name} ({rate_class}) [{energy_sector}]"
 
 
+def company_display_name(company_name: str) -> str:
+    """Strip the sector suffix, which the device carries as its model instead.
+
+    "Alectra (RESIDENTIAL) [Electricity]" becomes "Alectra (RESIDENTIAL)".
+    """
+    return SECTOR_SUFFIX_PATTERN.sub("", company_name).strip()
+
+
 def energy_sector_from_company_name(company_name: str) -> str:
     """Extract the energy sector key from a formatted company name.
 

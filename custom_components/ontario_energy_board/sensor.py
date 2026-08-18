@@ -1,25 +1,152 @@
-"""Sensor integration for Ontario Energy Board."""
+"""Sensor platform for the Ontario Energy Board integration.
 
-from functools import partial
+Entities are declared as `SensorEntityDescription`s carrying a `value_fn` that
+reads from the coordinator, so a new OEB field becomes one table row rather
+than a new class.
+"""
 
-from holidays import country_holidays
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from collections.abc import Callable
+from dataclasses import dataclass
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.setup import SetupPhases, async_pause_setup
+from homeassistant.helpers.typing import StateType
 from homeassistant.util.dt import as_local, now
 
 from . import peaks
-from .common import get_energy_sector_metadata
-from .const import DOMAIN, PEAK_KEY_MAPPINGS, SCAN_INTERVAL, SECTOR_ELECTRICITY
+from .const import (
+    DOMAIN,
+    ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    NATURAL_GAS_RATE_UNIT_OF_MEASURE,
+    PEAK_KEY_MAPPINGS,
+    SCAN_INTERVAL,
+    SEASON_OPTIONS,
+    SECTOR_ELECTRICITY,
+    STATE_SUMMER,
+    STATE_WINTER,
+    TOU_PEAK_OPTIONS,
+    ULO_PEAK_OPTIONS,
+)
+from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
+from .entity import OntarioEnergyBoardEntity
 
-# Home Assistant reads SCAN_INTERVAL off the platform module itself, so it has
-# to be a name here and not only in const. The active peak changes with the
-# clock rather than with new data, which is why this entity polls far more
-# often than the coordinator refreshes.
+# Home Assistant reads the poll interval off the platform module itself.
 __all__ = ["SCAN_INTERVAL", "async_setup_entry"]
+
+
+@dataclass(frozen=True, kw_only=True)
+class OntarioEnergyBoardSensorEntityDescription(SensorEntityDescription):
+    """Describes an Ontario Energy Board sensor."""
+
+    value_fn: Callable[[OntarioEnergyBoardDataUpdateCoordinator], StateType]
+    # Most values only change when the coordinator refreshes, once a day. Only
+    # the few derived from the wall clock need the platform to poll them.
+    clock_dependent: bool = False
+    # Reuses the config entry's own unique id, preserving an entity that
+    # predates the device layout.
+    use_entry_unique_id: bool = False
+
+
+def _active_peak(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
+    return peaks.active_peak(
+        as_local(now()),
+        coordinator.ontario_holidays,
+        energy_sector=coordinator.energy_sector,
+        ulo_enabled=coordinator.ulo_enabled,
+    )
+
+
+def _current_rate(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> StateType:
+    """The rate in effect right now, per the entry's sector and rate plan."""
+    company_data = coordinator.company_data
+
+    if coordinator.energy_sector != SECTOR_ELECTRICITY:
+        return company_data.get("gas_supply_charge")
+
+    mapping = PEAK_KEY_MAPPINGS.get(_active_peak(coordinator))
+
+    return None if mapping is None else company_data.get(mapping)
+
+
+def _season(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
+    return STATE_SUMMER if peaks.is_summer(as_local(now())) else STATE_WINTER
+
+
+CURRENT_RATE_ELECTRICITY = OntarioEnergyBoardSensorEntityDescription(
+    key="current_rate",
+    translation_key="current_rate",
+    native_unit_of_measurement=ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=4,
+    value_fn=_current_rate,
+    clock_dependent=True,
+    use_entry_unique_id=True,
+)
+
+CURRENT_RATE_NATURAL_GAS = OntarioEnergyBoardSensorEntityDescription(
+    key="current_rate",
+    translation_key="current_rate",
+    native_unit_of_measurement=NATURAL_GAS_RATE_UNIT_OF_MEASURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=5,
+    value_fn=_current_rate,
+    use_entry_unique_id=True,
+)
+
+SEASON = OntarioEnergyBoardSensorEntityDescription(
+    key="season",
+    translation_key="season",
+    device_class=SensorDeviceClass.ENUM,
+    options=SEASON_OPTIONS,
+    entity_category=EntityCategory.DIAGNOSTIC,
+    value_fn=_season,
+    clock_dependent=True,
+)
+
+
+def _active_peak_description(
+    options: list[str],
+) -> OntarioEnergyBoardSensorEntityDescription:
+    return OntarioEnergyBoardSensorEntityDescription(
+        key="active_peak",
+        translation_key="active_peak",
+        device_class=SensorDeviceClass.ENUM,
+        options=options,
+        value_fn=_active_peak,
+        clock_dependent=True,
+    )
+
+
+def descriptions_for(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> list[OntarioEnergyBoardSensorEntityDescription]:
+    """Pick the sensors that make sense for this entry's sector and plan."""
+    if coordinator.energy_sector != SECTOR_ELECTRICITY:
+        # Gas has no peak periods and no seasonal schedule.
+        return [CURRENT_RATE_NATURAL_GAS]
+
+    peak_options = ULO_PEAK_OPTIONS if coordinator.ulo_enabled else TOU_PEAK_OPTIONS
+
+    descriptions = [
+        CURRENT_RATE_ELECTRICITY,
+        _active_peak_description(peak_options),
+    ]
+
+    # Only Time-of-Use swaps its schedule between summer and winter.
+    if not coordinator.ulo_enabled:
+        descriptions.append(SEASON)
+
+    return descriptions
 
 
 async def async_setup_entry(
@@ -28,96 +155,24 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Ontario Energy Board sensors."""
-
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Importing `holidays` builds its data tables and is slow enough to block
-    # the event loop, so it is pushed to the import executor.
-    with async_pause_setup(hass, SetupPhases.WAIT_IMPORT_PACKAGES):
-        ontario_holidays = await hass.async_add_import_executor_job(
-            partial(
-                country_holidays,
-                "CA",
-                subdiv="ON",
-                observed=True,
-                categories={"public", "optional"},
-            )
-        )
-
     async_add_entities(
-        [OntarioEnergyBoardSensor(coordinator, entry.unique_id, ontario_holidays)]
+        OntarioEnergyBoardSensor(coordinator, description)
+        for description in descriptions_for(coordinator)
     )
 
 
-class OntarioEnergyBoardSensor(CoordinatorEntity, SensorEntity):
-    """Sensor object for Ontario Energy Board.
+class OntarioEnergyBoardSensor(OntarioEnergyBoardEntity, SensorEntity):
+    """A single value published by the Ontario Energy Board."""
 
-    The peak rules themselves live in `peaks`, which knows nothing about Home
-    Assistant. This class only supplies the current moment and the coordinator's
-    configuration to them.
-    """
-
-    _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_icon = "mdi:cash-multiple"
-    # The state depends on the wall clock, not only on coordinator updates.
-    _attr_should_poll = True
-
-    def __init__(self, coordinator, entity_unique_id, ontario_holidays) -> None:
-        super().__init__(coordinator)
-
-        energy_company_metadata = get_energy_sector_metadata(coordinator.energy_sector)
-
-        self.ontario_holidays = ontario_holidays
-
-        self._attr_unique_id = entity_unique_id
-        self._attr_name = f"{coordinator.energy_company} Rate"
-        self._attr_native_unit_of_measurement = energy_company_metadata[
-            "unit_of_measure"
-        ]
+    entity_description: OntarioEnergyBoardSensorEntityDescription
 
     @property
-    def is_summer(self) -> bool:
-        return peaks.is_summer(as_local(now()))
+    def should_poll(self) -> bool:
+        """Poll only the values that change with the clock rather than the data."""
+        return self.entity_description.clock_dependent
 
     @property
-    def active_peak(self) -> str:
-        """The active peak under the plan this entry is configured for."""
-        return peaks.active_peak(
-            as_local(now()),
-            self.ontario_holidays,
-            energy_sector=self.coordinator.energy_sector,
-            ulo_enabled=self.coordinator.ulo_enabled,
-        )
-
-    @property
-    def native_value(self) -> float | str | None:
-        """The current peak's rate, or the gas supply charge for natural gas.
-
-        Returns None rather than raising when the rate is absent, so a partial
-        or missing document surfaces as an unknown state.
-        """
-
-        company_data = self.coordinator.company_data
-
-        if self.coordinator.energy_sector == SECTOR_ELECTRICITY:
-            active_peak_mapping = PEAK_KEY_MAPPINGS.get(self.active_peak)
-
-            if active_peak_mapping is None:
-                return None
-
-            return company_data.get(active_peak_mapping)
-
-        return company_data.get("gas_supply_charge")
-
-    @property
-    def extra_state_attributes(self) -> dict:
-        attributes = {
-            "energy_company": self.coordinator.energy_company,
-            "energy_sector": self.coordinator.energy_sector,
-            "active_peak": self.active_peak,
-            "season": "summer" if self.is_summer else "winter",
-        }
-
-        attributes.update(self.coordinator.company_data)
-
-        return attributes
+    def native_value(self) -> StateType:
+        return self.entity_description.value_fn(self.coordinator)

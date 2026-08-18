@@ -18,8 +18,14 @@ NATURAL_GAS_RATES_URL = "https://www.oeb.ca/_html/calculator/data/GasBillData.xm
 ELECTRICITY_XML_ROOT_ELEMENT = "BillDataRow"
 NATURAL_GAS_XML_ROOT_ELEMENT = "GasBillData"
 
-ELECTRICITY_RATE_UNIT_OF_MEASURE = "CA $/kWh"
-NATURAL_GAS_RATE_UNIT_OF_MEASURE = "CA ¢/m³"
+MANUFACTURER = "Ontario Energy Board"
+OEB_URL = "https://www.oeb.ca/"
+
+# Home Assistant reads the part after "/" to convert energy costs, so the
+# suffix must be a real unit. The currency prefix is free-form.
+ELECTRICITY_RATE_UNIT_OF_MEASURE = "CAD/kWh"
+NATURAL_GAS_RATE_UNIT_OF_MEASURE = "CAD/m³"
+CURRENCY_UNIT = "CAD"
 
 REFRESH_RATES_INTERVAL = timedelta(days=1)
 SCAN_INTERVAL = timedelta(minutes=1)
@@ -119,6 +125,20 @@ STATE_ULO_MID_PEAK = "ulo_mid_peak"
 STATE_ULO_OFF_PEAK = "ulo_off_peak"
 STATE_ULO_OVERNIGHT = "ulo_overnight"
 STATE_NO_PEAK = "no_peak"
+
+STATE_SUMMER = "summer"
+STATE_WINTER = "winter"
+
+# Enum sensors validate their state against these, so each rate plan advertises
+# only the peaks it can actually report.
+TOU_PEAK_OPTIONS = [STATE_ON_PEAK, STATE_MID_PEAK, STATE_OFF_PEAK]
+ULO_PEAK_OPTIONS = [
+    STATE_ULO_ON_PEAK,
+    STATE_ULO_MID_PEAK,
+    STATE_ULO_OFF_PEAK,
+    STATE_ULO_OVERNIGHT,
+]
+SEASON_OPTIONS = [STATE_SUMMER, STATE_WINTER]
 
 PEAK_KEY_MAPPINGS = {
     STATE_ON_PEAK: "time_of_use_on_peak_price",
