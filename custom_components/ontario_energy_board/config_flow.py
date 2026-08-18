@@ -16,6 +16,7 @@ from homeassistant.helpers.selector import (
 import voluptuous as vol
 
 from .common import (
+    closest_company,
     company_display_name,
     effective_ulo_enabled,
     energy_sector_from_company_name,
@@ -30,6 +31,24 @@ from .const import (
 )
 
 _LOGGER: Final = logging.getLogger(__name__)
+
+
+def _company_selector(companies: list[str]) -> SelectSelector:
+    """A searchable list of companies.
+
+    The stored value keeps the sector suffix, since it identifies the sector;
+    the label drops it, because the sector is already known by this point.
+    """
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=[
+                SelectOptionDict(value=company, label=company_display_name(company))
+                for company in companies
+            ],
+            mode=SelectSelectorMode.DROPDOWN,
+            sort=False,
+        )
+    )
 
 
 class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -101,27 +120,60 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="cannot_connect")
 
         schema: dict[Any, Any] = {
-            vol.Required(CONF_ENERGY_COMPANY): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        # The stored value keeps the sector suffix, since it
-                        # identifies the entry; the label drops it, because the
-                        # sector was chosen a step ago.
-                        SelectOptionDict(
-                            value=company, label=company_display_name(company)
-                        )
-                        for company in companies
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                    sort=False,
-                )
-            )
+            vol.Required(CONF_ENERGY_COMPANY): _company_selector(companies)
         }
 
         if sector == SECTOR_ELECTRICITY:
             schema[vol.Required(CONF_ULO_ENABLED, default=False)] = bool
 
         return self.async_show_form(step_id=sector, data_schema=vol.Schema(schema))
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Point an existing entry at a different company.
+
+        Distributors are renamed and merged, which leaves an entry naming a
+        company the Ontario Energy Board no longer publishes. Re-pointing it
+        keeps the entry, and with it every entity id and its history; deleting
+        and re-adding would not.
+        """
+        entry = self._get_reconfigure_entry()
+        current = entry.data[CONF_ENERGY_COMPANY]
+        sector = energy_sector_from_company_name(current)
+
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                entry,
+                title=user_input[CONF_ENERGY_COMPANY],
+                data_updates={CONF_ENERGY_COMPANY: user_input[CONF_ENERGY_COMPANY]},
+            )
+
+        try:
+            companies = await get_energy_companies(
+                async_get_clientsession(self.hass), sector
+            )
+        except (aiohttp.ClientError, TimeoutError):
+            _LOGGER.exception("Failed to download the %s rates document", sector)
+            return self.async_abort(reason="cannot_connect")
+
+        # Offered as a default, never applied on the user's behalf: rate zones
+        # carry near-identical names and genuinely different delivery charges.
+        suggested = (
+            current if current in companies else closest_company(current, companies)
+        )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_ENERGY_COMPANY, default=suggested
+                    ): _company_selector(companies)
+                }
+            ),
+            description_placeholders={"energy_company": current},
+        )
 
     @staticmethod
     @callback

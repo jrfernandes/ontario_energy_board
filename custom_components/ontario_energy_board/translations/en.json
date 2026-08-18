@@ -1,8 +1,9 @@
 {
     "config": {
         "abort": {
-            "already_configured": "Device is already configured",
-            "cannot_connect": "Failed to connect"
+            "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+            "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+            "reconfigure_successful": "The energy company was updated."
         },
         "error": {
             "cannot_connect": "Failed to connect",
@@ -27,6 +28,13 @@
                 },
                 "description": "Select your natural gas distributor and service area.",
                 "title": "Natural gas company"
+            },
+            "reconfigure": {
+                "data": {
+                    "energy_company": "Energy company"
+                },
+                "description": "This entry is set to {energy_company}. Pick the company it should follow. Ontario distributors are regularly renamed or merged, so the closest current name has been selected for you — check it before saving, as rate zones have similar names but different delivery charges.",
+                "title": "Change energy company"
             },
             "user": {
                 "description": "Which kind of energy company would you like to add?",
@@ -229,6 +237,16 @@
             "wholesale_market_service_charge": {
                 "name": "Wholesale market service charge"
             }
+        }
+    },
+    "issues": {
+        "company_missing": {
+            "description": "The Ontario Energy Board no longer publishes rates for {energy_company}, so this entry cannot update. Ontario distributors are regularly renamed or merged into rate zones.\n\nOpen the integration and choose **Reconfigure** to point it at the current name. Doing that keeps your sensors and their history; deleting and re-adding the entry would not.",
+            "title": "{energy_company} is no longer published"
+        },
+        "company_suggestion": {
+            "description": "The Ontario Energy Board no longer publishes rates for {energy_company}, so this entry cannot update. It looks like it may now be called **{suggestion}**.\n\nOpen the integration and choose **Reconfigure** to point it at the current name, checking the suggestion before you save. Doing that keeps your sensors and their history; deleting and re-adding the entry would not.",
+            "title": "{energy_company} is no longer published"
         }
     },
     "options": {

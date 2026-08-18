@@ -3,6 +3,7 @@
 import aiohttp
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
 
 from custom_components.ontario_energy_board.const import (
     CONF_ENERGY_COMPANY,
@@ -286,3 +287,87 @@ async def test_the_original_plan_can_be_added_again_after_a_change(
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_reconfigure_repoints_a_renamed_company(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """The recovery path for a distributor that has been renamed or merged."""
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    other = "Algoma Power Inc. (RESIDENTIAL R1) [Electricity]"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ENERGY_COMPANY: other}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_ENERGY_COMPANY] == other
+    assert entry.title == other
+
+
+async def test_reconfigure_preserves_the_entities(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """Re-pointing keeps the history; deleting and re-adding would not."""
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    before = {e.entity_id: e.unique_id for e in registry.entities.values()}
+
+    result = await entry.start_reconfigure_flow(hass)
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_ENERGY_COMPANY: "Algoma Power Inc. (RESIDENTIAL R1) [Electricity]"},
+    )
+    await hass.async_block_till_done()
+
+    after = {e.entity_id: e.unique_id for e in registry.entities.values()}
+
+    assert after == before
+
+
+async def test_reconfigure_offers_the_closest_surviving_name(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """The likely new name is pre-selected, but the user confirms it.
+
+    Rate zones carry near-identical names and different delivery charges, so
+    choosing automatically could quietly bill against another city's rates.
+    """
+    entry = build_config_entry(
+        "Alectra Utilities Corporation-For Brampton Main Rate Zone "
+        "(RESIDENTIAL) [Electricity]"
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    assert result["data_schema"]({})[CONF_ENERGY_COMPANY] == ELECTRICITY_COMPANY
+
+
+async def test_reconfigure_stays_within_the_current_sector(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """A gas entry cannot be re-pointed at an electricity company."""
+    entry = build_config_entry(NATURAL_GAS_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    values = [option["value"] for option in _company_options(result)]
+
+    assert NATURAL_GAS_COMPANY in values
+    assert ELECTRICITY_COMPANY not in values

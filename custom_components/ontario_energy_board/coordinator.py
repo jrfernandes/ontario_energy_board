@@ -5,14 +5,19 @@ from datetime import date
 import logging
 from typing import Final
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .common import (
+    closest_company,
     effective_ulo_enabled,
     energy_sector_from_company_name,
+    get_energy_companies,
     get_energy_company_data,
 )
 from .const import CONF_ENERGY_COMPANY, DOMAIN, REFRESH_RATES_INTERVAL
@@ -57,6 +62,50 @@ class OntarioEnergyBoardDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         )
 
         if company_data is None:
-            raise UpdateFailed(f"Could not find energy rates for {self.energy_company}")
+            # The company has left the document. Ontario distributors are
+            # regularly renamed or merged into rate zones, and no amount of
+            # retrying brings the old name back, so this is reported as
+            # something the user has to act on rather than retried forever.
+            await self._async_report_company_missing()
+
+            raise ConfigEntryError(
+                f"{self.energy_company} is no longer published by the Ontario "
+                "Energy Board, and the entry needs to be pointed at its "
+                "current name"
+            )
+
+        self._async_clear_company_missing()
 
         return company_data
+
+    async def _async_report_company_missing(self) -> None:
+        """Raise a repair explaining the entry needs re-pointing."""
+        suggestion = ""
+
+        try:
+            available = await get_energy_companies(self.websession, self.energy_sector)
+        except (aiohttp.ClientError, TimeoutError):
+            available = []
+
+        if match := closest_company(self.energy_company, available):
+            suggestion = match
+
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            self._company_missing_issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key="company_suggestion" if suggestion else "company_missing",
+            translation_placeholders={
+                "energy_company": self.energy_company,
+                "suggestion": suggestion,
+            },
+        )
+
+    def _async_clear_company_missing(self) -> None:
+        ir.async_delete_issue(self.hass, DOMAIN, self._company_missing_issue_id)
+
+    @property
+    def _company_missing_issue_id(self) -> str:
+        return f"company_missing_{self.config_entry.entry_id}"
