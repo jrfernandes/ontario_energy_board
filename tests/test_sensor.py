@@ -231,6 +231,10 @@ async def test_only_clock_dependent_entities_poll(hass, init_integration):
         "current_all_in_rate",
         "active_peak",
         "season",
+        "next_peak",
+        "next_peak_starts_at",
+        "next_peak_rate",
+        "next_peak_all_in_rate",
     }
 
     # The binary sensor tracks a flag that changes at most daily, so it has no
@@ -274,6 +278,10 @@ async def test_period_rates_are_enabled_diagnostics(hass, init_integration):
         f"{ELECTRICITY}_current_all_in_rate",
         f"{ELECTRICITY}_active_peak",
         f"{ELECTRICITY}_season",
+        f"{ELECTRICITY}_next_peak",
+        f"{ELECTRICITY}_next_peak_starts",
+        f"{ELECTRICITY}_next_peak_rate",
+        f"{ELECTRICITY}_next_peak_all_in_rate",
         f"{ELECTRICITY}_off_peak_rate",
         f"{ELECTRICITY}_mid_peak_rate",
         f"{ELECTRICITY}_on_peak_rate",
@@ -565,3 +573,67 @@ async def test_natural_gas_has_no_all_in_rate(hass, init_integration):
         await init_integration(NATURAL_GAS_COMPANY)
 
     assert hass.states.get(f"{GAS}_current_all_in_rate") is None
+
+
+async def test_next_peak_sensors_report_the_coming_change(hass, init_integration):
+    """A winter weekday morning is on-peak until eleven, then mid-peak."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    assert hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_ON_PEAK
+    assert hass.states.get(f"{ELECTRICITY}_next_peak").state == STATE_MID_PEAK
+    assert float(
+        hass.states.get(f"{ELECTRICITY}_next_peak_rate").state
+    ) == pytest.approx(0.157)
+
+
+async def test_next_peak_starts_is_an_instant_not_a_countdown(hass, init_integration):
+    """Home Assistant renders a timestamp as relative time by itself."""
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    state = hass.states.get(f"{ELECTRICITY}_next_peak_starts")
+
+    assert state.attributes["device_class"] == "timestamp"
+    assert datetime.fromisoformat(state.state) == ontario_moment(2024, 1, 15, 11)
+
+
+async def test_next_peak_looks_across_a_whole_weekend(hass, init_integration):
+    """Friday evening off-peak runs until Monday morning."""
+    with freeze_time(ontario_moment(2024, 1, 12, 19)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    state = hass.states.get(f"{ELECTRICITY}_next_peak_starts")
+
+    assert datetime.fromisoformat(state.state) == ontario_moment(2024, 1, 15, 7)
+    assert hass.states.get(f"{ELECTRICITY}_next_peak").state == STATE_ON_PEAK
+
+
+async def test_next_peak_all_in_rate_matches_the_billing_arithmetic(
+    hass, init_integration
+):
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+    # Mid-peak comes next; 0.157 all-in for this distributor.
+    assert float(
+        hass.states.get(f"{ELECTRICITY}_next_peak_all_in_rate").state
+    ) == pytest.approx(0.169561, abs=1e-6)
+
+
+async def test_next_peak_advertises_only_its_plans_peaks(hass, init_integration):
+    with freeze_time(ontario_moment(2024, 1, 15, 8)):
+        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=True)
+
+    state = hass.states.get(f"{ELECTRICITY}_next_peak")
+
+    assert state.attributes["options"] == ULO_PEAK_OPTIONS
+    assert state.state in ULO_PEAK_OPTIONS
+
+
+async def test_natural_gas_has_no_next_peak_sensors(hass, init_integration):
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        await init_integration(NATURAL_GAS_COMPANY)
+
+    for key in ("next_peak", "next_peak_starts", "next_peak_rate"):
+        assert hass.states.get(f"{GAS}_{key}") is None

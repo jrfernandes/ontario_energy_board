@@ -9,7 +9,7 @@ All callers must pass a datetime already localised to the Ontario timezone.
 """
 
 from collections.abc import Container
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from .const import (
     SECTOR_ELECTRICITY,
@@ -110,3 +110,54 @@ def active_peak(
         return ulo_active_peak(moment, holidays)
 
     return tou_active_peak(moment, holidays)
+
+
+# A Time-of-Use off-peak stretch runs from Friday evening to Monday morning,
+# and a holiday adjoining a weekend extends it further. Eight days clears any
+# run of statutory holidays Ontario can produce, and the search is cheap.
+MAX_LOOKAHEAD_HOURS = 8 * 24
+
+
+def _next_hour(moment: datetime) -> datetime:
+    """The following hour boundary, correct across daylight saving changes.
+
+    Adding to a zone-aware datetime directly does wall-clock arithmetic and
+    keeps the old offset, which drifts by an hour twice a year. Going through
+    UTC keeps it to a true hour.
+    """
+    return (moment.astimezone(UTC) + timedelta(hours=1)).astimezone(moment.tzinfo)
+
+
+def next_peak_change(
+    moment: datetime,
+    holidays: Container[date],
+    *,
+    energy_sector: str,
+    ulo_enabled: bool,
+) -> tuple[datetime, str] | None:
+    """When the peak next changes, and what it changes to.
+
+    Returns None where there is nothing to look forward to, which is any
+    sector without peak periods.
+
+    Peaks only ever change on the hour, so only hour boundaries are tested.
+    """
+    if energy_sector != SECTOR_ELECTRICITY:
+        return None
+
+    current = active_peak(
+        moment, holidays, energy_sector=energy_sector, ulo_enabled=ulo_enabled
+    )
+
+    probe = moment.replace(minute=0, second=0, microsecond=0)
+
+    for _ in range(MAX_LOOKAHEAD_HOURS):
+        probe = _next_hour(probe)
+        upcoming = active_peak(
+            probe, holidays, energy_sector=energy_sector, ulo_enabled=ulo_enabled
+        )
+
+        if upcoming != current:
+            return probe, upcoming
+
+    return None

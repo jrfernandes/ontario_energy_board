@@ -7,7 +7,7 @@ than a new class.
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, datetime
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -91,6 +91,59 @@ def _current_all_in_rate(
         return None
 
     return billing.marginal_rate(coordinator.company_data, _current_rate(coordinator))
+
+
+def _next_change(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> tuple[datetime, str] | None:
+    return peaks.next_peak_change(
+        as_local(now()),
+        coordinator.ontario_holidays,
+        energy_sector=coordinator.energy_sector,
+        ulo_enabled=coordinator.ulo_enabled,
+    )
+
+
+def _next_peak(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> StateType:
+    """Which peak period comes next."""
+    change = _next_change(coordinator)
+
+    return None if change is None else change[1]
+
+
+def _next_peak_starts_at(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> datetime | None:
+    """When the peak next changes.
+
+    Reported as an instant rather than a countdown: Home Assistant renders a
+    timestamp as relative time on its own, and an instant is what an automation
+    can act on.
+    """
+    change = _next_change(coordinator)
+
+    return None if change is None else change[0]
+
+
+def _next_peak_commodity_rate(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> StateType:
+    change = _next_change(coordinator)
+
+    if change is None:
+        return None
+
+    mapping = PEAK_KEY_MAPPINGS.get(change[1])
+
+    return None if mapping is None else coordinator.company_data.get(mapping)
+
+
+def _next_peak_all_in_rate(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> StateType:
+    return billing.marginal_rate(
+        coordinator.company_data, _next_peak_commodity_rate(coordinator)
+    )
 
 
 def _season(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
@@ -231,6 +284,34 @@ CURRENT_ALL_IN_RATE = OntarioEnergyBoardSensorEntityDescription(
     state_class=SensorStateClass.MEASUREMENT,
     suggested_display_precision=4,
     value_fn=_current_all_in_rate,
+    clock_dependent=True,
+)
+
+NEXT_PEAK_STARTS_AT = OntarioEnergyBoardSensorEntityDescription(
+    key="next_peak_starts_at",
+    translation_key="next_peak_starts_at",
+    device_class=SensorDeviceClass.TIMESTAMP,
+    value_fn=_next_peak_starts_at,
+    clock_dependent=True,
+)
+
+NEXT_PEAK_RATE = OntarioEnergyBoardSensorEntityDescription(
+    key="next_peak_rate",
+    translation_key="next_peak_rate",
+    native_unit_of_measurement=ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=4,
+    value_fn=_next_peak_commodity_rate,
+    clock_dependent=True,
+)
+
+NEXT_PEAK_ALL_IN_RATE = OntarioEnergyBoardSensorEntityDescription(
+    key="next_peak_all_in_rate",
+    translation_key="next_peak_all_in_rate",
+    native_unit_of_measurement=ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=4,
+    value_fn=_next_peak_all_in_rate,
     clock_dependent=True,
 )
 
@@ -421,6 +502,19 @@ def _active_peak_description(
     )
 
 
+def _next_peak_description(
+    options: list[str],
+) -> OntarioEnergyBoardSensorEntityDescription:
+    return OntarioEnergyBoardSensorEntityDescription(
+        key="next_peak",
+        translation_key="next_peak",
+        device_class=SensorDeviceClass.ENUM,
+        options=options,
+        value_fn=_next_peak,
+        clock_dependent=True,
+    )
+
+
 def descriptions_for(
     coordinator: OntarioEnergyBoardDataUpdateCoordinator,
 ) -> list[OntarioEnergyBoardSensorEntityDescription]:
@@ -445,6 +539,10 @@ def descriptions_for(
         CURRENT_RATE_ELECTRICITY,
         CURRENT_ALL_IN_RATE,
         _active_peak_description(peak_options),
+        _next_peak_description(peak_options),
+        NEXT_PEAK_STARTS_AT,
+        NEXT_PEAK_RATE,
+        NEXT_PEAK_ALL_IN_RATE,
     ]
 
     # Only Time-of-Use swaps its schedule between summer and winter.

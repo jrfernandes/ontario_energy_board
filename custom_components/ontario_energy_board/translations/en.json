@@ -171,6 +171,27 @@
             "monthly_fixed_charge": {
                 "name": "Monthly service charge"
             },
+            "next_peak": {
+                "name": "Next peak",
+                "state": {
+                    "mid_peak": "Mid-peak",
+                    "off_peak": "Off-peak",
+                    "on_peak": "On-peak",
+                    "ulo_mid_peak": "Mid-peak",
+                    "ulo_off_peak": "Weekend off-peak",
+                    "ulo_on_peak": "On-peak",
+                    "ulo_overnight": "Overnight"
+                }
+            },
+            "next_peak_all_in_rate": {
+                "name": "Next peak all-in rate"
+            },
+            "next_peak_rate": {
+                "name": "Next peak rate"
+            },
+            "next_peak_starts_at": {
+                "name": "Next peak starts"
+            },
             "off_peak_rate": {
                 "name": "Off-peak rate"
             },
