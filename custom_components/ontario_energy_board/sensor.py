@@ -23,7 +23,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.util.dt import as_local, now
 
-from . import peaks
+from . import billing, peaks
 from .const import (
     CURRENCY_UNIT,
     DOMAIN,
@@ -79,6 +79,21 @@ def _current_rate(
     mapping = PEAK_KEY_MAPPINGS.get(_active_peak(coordinator))
 
     return None if mapping is None else company_data.get(mapping)
+
+
+def _current_all_in_rate(
+    coordinator: OntarioEnergyBoardDataUpdateCoordinator,
+) -> StateType:
+    """What the next kWh actually costs, delivery, regulatory charges and tax
+    included.
+
+    Gas is excluded: its delivery is banded by monthly volume, so a marginal
+    rate would depend on which tier the month has reached.
+    """
+    if coordinator.energy_sector != SECTOR_ELECTRICITY:
+        return None
+
+    return billing.marginal_rate(coordinator.company_data, _current_rate(coordinator))
 
 
 def _season(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
@@ -212,6 +227,16 @@ CURRENT_RATE_NATURAL_GAS = OntarioEnergyBoardSensorEntityDescription(
     suggested_display_precision=6,
     value_fn=_current_rate,
     use_entry_unique_id=True,
+)
+
+CURRENT_ALL_IN_RATE = OntarioEnergyBoardSensorEntityDescription(
+    key="current_all_in_rate",
+    translation_key="current_all_in_rate",
+    native_unit_of_measurement=ELECTRICITY_RATE_UNIT_OF_MEASURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=4,
+    value_fn=_current_all_in_rate,
+    clock_dependent=True,
 )
 
 SEASON = OntarioEnergyBoardSensorEntityDescription(
@@ -423,6 +448,7 @@ def descriptions_for(
 
     descriptions = [
         CURRENT_RATE_ELECTRICITY,
+        CURRENT_ALL_IN_RATE,
         _active_peak_description(peak_options),
     ]
 

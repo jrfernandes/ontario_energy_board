@@ -57,6 +57,9 @@
           "ulo_overnight": "Overnight"
         }
       },
+      "current_all_in_rate": {
+        "name": "Current all-in rate"
+      },
       "current_rate": {
         "name": "Current rate"
       },
