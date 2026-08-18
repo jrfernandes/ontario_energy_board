@@ -430,16 +430,15 @@ def descriptions_for(
     if not coordinator.ulo_enabled:
         descriptions.append(SEASON)
 
-    # The configured plan's rates are on; the other plan's are still published
-    # as diagnostics, so the two can be compared without reconfiguring.
-    configured, alternate = (
-        (ULO_RATE_SENSORS, TOU_RATE_SENSORS)
-        if coordinator.ulo_enabled
-        else (TOU_RATE_SENSORS, ULO_RATE_SENSORS)
+    # Both plans' rates are published as enabled diagnostics, rather than
+    # promoting whichever plan is configured. entity_registry_enabled_default
+    # only applies the first time an entity is registered, so a split could not
+    # follow a plan changed later from the options: the newly relevant rates
+    # would stay disabled. Publishing both also lets the two be compared.
+    descriptions.extend(
+        _as_shown_diagnostic(description)
+        for description in (*TOU_RATE_SENSORS, *ULO_RATE_SENSORS)
     )
-
-    descriptions.extend(configured)
-    descriptions.extend(_as_diagnostic(description) for description in alternate)
     descriptions.extend(
         _as_diagnostic(description) for description in ELECTRICITY_DIAGNOSTIC_SENSORS
     )

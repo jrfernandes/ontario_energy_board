@@ -5,6 +5,7 @@ from typing import Any, Final
 
 import aiohttp
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -14,7 +15,12 @@ from homeassistant.helpers.selector import (
 )
 import voluptuous as vol
 
-from .common import company_display_name, get_energy_companies
+from .common import (
+    company_display_name,
+    effective_ulo_enabled,
+    energy_sector_from_company_name,
+    get_energy_companies,
+)
 from .const import (
     CONF_ENERGY_COMPANY,
     CONF_ULO_ENABLED,
@@ -71,6 +77,17 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(f"{energy_company} {ulo_enabled}")
             self._abort_if_unique_id_configured()
 
+            # The unique id records the plan chosen at setup, and cannot change
+            # afterwards without orphaning every entity derived from it. An
+            # entry whose plan was later corrected from the options therefore
+            # has to be compared on its current plan, not on its id.
+            if any(
+                entry.data[CONF_ENERGY_COMPANY] == energy_company
+                and effective_ulo_enabled(entry) == ulo_enabled
+                for entry in self._async_current_entries()
+            ):
+                return self.async_abort(reason="already_configured")
+
             return self.async_create_entry(
                 title=energy_company,
                 data={
@@ -109,3 +126,44 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema[vol.Required(CONF_ULO_ENABLED, default=False)] = bool
 
         return self.async_show_form(step_id=sector, data_schema=vol.Schema(schema))
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Allow the rate plan to be corrected after setup."""
+        return OntarioEnergyBoardOptionsFlow()
+
+
+class OntarioEnergyBoardOptionsFlow(config_entries.OptionsFlow):
+    """Change which rate plan an existing entry is billed on.
+
+    This is configuration rather than control: it records the plan the utility
+    bills the account on, which Home Assistant cannot change.
+    """
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        energy_company = self.config_entry.data[CONF_ENERGY_COMPANY]
+
+        if energy_sector_from_company_name(energy_company) != SECTOR_ELECTRICITY:
+            # Gas has no peak periods, so there is no plan to choose.
+            return self.async_abort(reason="no_rate_plan")
+
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_ULO_ENABLED,
+                        default=effective_ulo_enabled(self.config_entry),
+                    ): bool
+                }
+            ),
+            description_placeholders={"energy_company": energy_company},
+        )

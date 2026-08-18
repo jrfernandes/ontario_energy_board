@@ -227,5 +227,22 @@
         "name": "Wholesale market service charge"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rate plan",
+        "description": "Which rate plan is {energy_company} billing you on?",
+        "data": {
+          "ulo_enabled": "Ultra-Low Overnight (ULO) rates"
+        },
+        "data_description": {
+          "ulo_enabled": "Turn this on only if you have opted in to the Ultra-Low Overnight plan with your utility. Changing it here tells Home Assistant which rates apply; it does not change your billing."
+        }
+      }
+    },
+    "abort": {
+      "no_rate_plan": "Natural gas has no peak periods, so there is no rate plan to choose."
+    }
   }
 }

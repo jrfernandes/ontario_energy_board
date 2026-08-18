@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import async_get_platforms
 import pytest
 
 from custom_components.ontario_energy_board.const import (
+    CONF_ULO_ENABLED,
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
@@ -248,8 +249,15 @@ def _keys(registry, *, disabled: bool) -> set[str]:
     }
 
 
-async def test_time_of_use_entry_enables_only_its_own_rates(hass, init_integration):
-    """A lean default surface: the plan's rates, the peak, and the season."""
+async def test_period_rates_are_enabled_diagnostics(hass, init_integration):
+    """Both plans' rates are published, grouped as diagnostics.
+
+    entity_registry_enabled_default only applies the first time an entity is
+    registered, so promoting whichever plan is configured could not survive a
+    plan changed later from the options: the newly relevant rates would stay
+    disabled. Publishing both, always enabled, sidesteps that and lets the two
+    plans be compared.
+    """
     with freeze_time(ontario_moment(2024, 1, 15, 8)):
         await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
 
@@ -263,22 +271,63 @@ async def test_time_of_use_entry_enables_only_its_own_rates(hass, init_integrati
         f"{ELECTRICITY}_off_peak_rate",
         f"{ELECTRICITY}_mid_peak_rate",
         f"{ELECTRICITY}_on_peak_rate",
+        f"{ELECTRICITY}_ulo_overnight_rate",
+        f"{ELECTRICITY}_ulo_weekend_off_peak_rate",
+        f"{ELECTRICITY}_ulo_mid_peak_rate",
+        f"{ELECTRICITY}_ulo_on_peak_rate",
     }
 
-    assert hass.states.get(f"{ELECTRICITY}_on_peak_rate").state == "0.203"
+    for key in ("on_peak_rate", "ulo_overnight_rate"):
+        entry = registry.async_get(f"{ELECTRICITY}_{key}")
+        assert entry.entity_category is er.EntityCategory.DIAGNOSTIC, key
+
+    # Only the live values stay out of the diagnostics section.
+    assert registry.async_get(f"{ELECTRICITY}_current_rate").entity_category is None
+    assert registry.async_get(f"{ELECTRICITY}_active_peak").entity_category is None
 
 
-async def test_the_other_plans_rates_ship_disabled(hass, init_integration):
-    """Both plans are published so they can be compared without reconfiguring."""
-    with freeze_time(ontario_moment(2024, 1, 15, 8)):
-        await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+async def test_changing_the_rate_plan_takes_effect(hass, init_integration):
+    """Correcting the plan from the options changes which rates apply."""
+    with freeze_time(ontario_moment(2024, 1, 15, 2)):
+        entry = await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
 
-    registry = er.async_get(hass)
-    disabled = _keys(registry, disabled=True)
+        # 02:00 on a winter weekday: off-peak under Time-of-Use.
+        assert hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_OFF_PEAK
+        assert float(
+            hass.states.get(f"{ELECTRICITY}_current_rate").state
+        ) == pytest.approx(0.098)
 
-    assert {"ulo_overnight_rate", "ulo_on_peak_rate"} <= disabled
-    # Published, but not cluttering the dashboard until asked for.
-    assert hass.states.get(f"{ELECTRICITY}_ulo_overnight_rate") is None
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_ULO_ENABLED: True}
+        )
+        await hass.async_block_till_done()
+
+        # The same moment is overnight under Ultra-Low Overnight.
+        assert (
+            hass.states.get(f"{ELECTRICITY}_active_peak").state == STATE_ULO_OVERNIGHT
+        )
+        assert float(
+            hass.states.get(f"{ELECTRICITY}_current_rate").state
+        ) == pytest.approx(0.039)
+
+
+async def test_changing_the_rate_plan_keeps_the_entities(hass, init_integration):
+    """The reload must not orphan anything, least of all the pre-1.0 sensor."""
+    with freeze_time(ontario_moment(2024, 1, 15, 12)):
+        entry = await init_integration(ELECTRICITY_COMPANY, ulo_enabled=False)
+
+        before = {e.entity_id for e in er.async_get(hass).entities.values()}
+
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_ULO_ENABLED: True}
+        )
+        await hass.async_block_till_done()
+
+    after = {e.entity_id for e in er.async_get(hass).entities.values()}
+
+    assert after == before
 
 
 async def test_bill_components_ship_as_disabled_diagnostics(hass, init_integration):

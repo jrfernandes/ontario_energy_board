@@ -11,6 +11,7 @@ import aiohttp
 import defusedxml.ElementTree as ET
 
 from .const import (
+    CONF_ULO_ENABLED,
     ELECTRICITY_CLASS_KEY,
     ELECTRICITY_NAME_KEY,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
@@ -66,6 +67,18 @@ def company_display_name(company_name: str) -> str:
     "Alectra (RESIDENTIAL) [Electricity]" becomes "Alectra (RESIDENTIAL)".
     """
     return SECTOR_SUFFIX_PATTERN.sub("", company_name).strip()
+
+
+def effective_ulo_enabled(config_entry) -> bool:
+    """Whether the entry is on the Ultra-Low Overnight plan.
+
+    The plan is chosen during setup and can be corrected afterwards from the
+    options, so the option wins where one has been set. Entries created before
+    the options existed only carry the setup value.
+    """
+    return config_entry.options.get(
+        CONF_ULO_ENABLED, config_entry.data[CONF_ULO_ENABLED]
+    )
 
 
 def energy_sector_from_company_name(company_name: str) -> str:
