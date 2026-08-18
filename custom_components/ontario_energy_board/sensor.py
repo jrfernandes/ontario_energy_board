@@ -6,7 +6,7 @@ than a new class.
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -15,6 +15,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import PERCENTAGE, UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -23,6 +24,7 @@ from homeassistant.util.dt import as_local, now
 
 from . import peaks
 from .const import (
+    CURRENCY_UNIT,
     DOMAIN,
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
@@ -82,6 +84,64 @@ def _season(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
     return STATE_SUMMER if peaks.is_summer(as_local(now())) else STATE_WINTER
 
 
+def _numeric(
+    key: str,
+) -> Callable[[OntarioEnergyBoardDataUpdateCoordinator], StateType]:
+    """Read a numeric field.
+
+    The OEB feed ships empty elements for charges that do not apply to a
+    distributor, which parse to "". Report those as unknown rather than letting
+    a non-numeric state reach a measurement sensor.
+    """
+
+    def value_fn(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> StateType:
+        value = coordinator.company_data.get(key)
+        return value if isinstance(value, (int, float)) else None
+
+    return value_fn
+
+
+def _percentage(
+    key: str,
+) -> Callable[[OntarioEnergyBoardDataUpdateCoordinator], StateType]:
+    """Read a rate the OEB stores as a fraction, and report it as a percentage.
+
+    HST arrives as 0.13, not 13.
+    """
+
+    def value_fn(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> StateType:
+        value = coordinator.company_data.get(key)
+        return value * 100 if isinstance(value, (int, float)) else None
+
+    return value_fn
+
+
+def _rate(
+    key: str, translation_key: str, **kwargs
+) -> OntarioEnergyBoardSensorEntityDescription:
+    """A price per kWh."""
+    return OntarioEnergyBoardSensorEntityDescription(
+        key=translation_key,
+        translation_key=translation_key,
+        native_unit_of_measurement=ELECTRICITY_RATE_UNIT_OF_MEASURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_numeric(key),
+        **kwargs,
+    )
+
+
+def _as_diagnostic(
+    description: OntarioEnergyBoardSensorEntityDescription,
+) -> OntarioEnergyBoardSensorEntityDescription:
+    """Demote a sensor to a diagnostic that is off until someone asks for it."""
+    return replace(
+        description,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    )
+
+
 CURRENT_RATE_ELECTRICITY = OntarioEnergyBoardSensorEntityDescription(
     key="current_rate",
     translation_key="current_rate",
@@ -111,6 +171,111 @@ SEASON = OntarioEnergyBoardSensorEntityDescription(
     entity_category=EntityCategory.DIAGNOSTIC,
     value_fn=_season,
     clock_dependent=True,
+)
+
+
+TOU_RATE_SENSORS = (
+    _rate("time_of_use_off_peak_price", "off_peak_rate"),
+    _rate("time_of_use_mid_peak_price", "mid_peak_rate"),
+    _rate("time_of_use_on_peak_price", "on_peak_rate"),
+)
+
+ULO_RATE_SENSORS = (
+    _rate("ultra_low_overnight_overnight_rate", "ulo_overnight_rate"),
+    _rate("ultra_low_overnight_weekend_off_peak_rate", "ulo_off_peak_rate"),
+    _rate("ultra_low_overnight_mid_peak_rate", "ulo_mid_peak_rate"),
+    _rate("ultra_low_overnight_on_peak_rate", "ulo_on_peak_rate"),
+)
+
+# Everything needed to reconstruct a bill, off by default. The README documents
+# this use case; enable what you need in the entity registry.
+ELECTRICITY_DIAGNOSTIC_SENSORS = (
+    # Volumetric, priced per kWh.
+    _rate("distribution_variable_charge", "distribution_variable_charge"),
+    _rate("distribution_volumetric_charge", "distribution_volumetric_charge"),
+    _rate("other_volumetric_charges", "other_volumetric_charges"),
+    _rate("global_adjustment", "global_adjustment"),
+    _rate("global_adjustment_rate_rider", "global_adjustment_rate_rider"),
+    _rate("retail_transmission_network_rate", "transmission_network_rate"),
+    _rate("retail_transmission_connection_rate", "transmission_connection_rate"),
+    _rate("wholesale_market_service_charge", "wholesale_market_service_charge"),
+    _rate("rural_remote_rate_protection", "rural_remote_rate_protection"),
+    _rate("debt_retirement_charge", "debt_retirement_charge"),
+    _rate("lower_tier_price", "lower_tier_price"),
+    _rate("higher_tier_price", "higher_tier_price"),
+    # Fixed amounts.
+    OntarioEnergyBoardSensorEntityDescription(
+        key="monthly_fixed_charge",
+        translation_key="monthly_fixed_charge",
+        native_unit_of_measurement=CURRENCY_UNIT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_numeric("monthly_fixed_charge"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="standard_supply_service_charge",
+        translation_key="standard_supply_service_charge",
+        native_unit_of_measurement=CURRENCY_UNIT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_numeric("standard_supply_service_charge"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="other_fixed_charges",
+        translation_key="other_fixed_charges",
+        native_unit_of_measurement=CURRENCY_UNIT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_numeric("other_fixed_charges"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="distribution_rate_protection_rate",
+        translation_key="distribution_rate_protection_rate",
+        native_unit_of_measurement=CURRENCY_UNIT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_numeric("distribution_rate_protection_rate"),
+    ),
+    # Percentages, stored by the OEB as fractions.
+    OntarioEnergyBoardSensorEntityDescription(
+        key="harmonized_sales_tax",
+        translation_key="harmonized_sales_tax",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=_percentage("harmonized_sales_tax"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="ontario_electricity_rebate",
+        translation_key="ontario_electricity_rebate",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=_percentage("ontario_electricity_rebate"),
+    ),
+    # Everything else.
+    OntarioEnergyBoardSensorEntityDescription(
+        key="tier_threshold",
+        translation_key="tier_threshold",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=_numeric("tier_threshold"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="loss_factor",
+        translation_key="loss_factor",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_numeric("loss_factor"),
+    ),
+    OntarioEnergyBoardSensorEntityDescription(
+        key="rate_year",
+        translation_key="rate_year",
+        suggested_display_precision=0,
+        value_fn=_numeric("rate_year"),
+    ),
 )
 
 
@@ -145,6 +310,20 @@ def descriptions_for(
     # Only Time-of-Use swaps its schedule between summer and winter.
     if not coordinator.ulo_enabled:
         descriptions.append(SEASON)
+
+    # The configured plan's rates are on; the other plan's are still published
+    # as diagnostics, so the two can be compared without reconfiguring.
+    configured, alternate = (
+        (ULO_RATE_SENSORS, TOU_RATE_SENSORS)
+        if coordinator.ulo_enabled
+        else (TOU_RATE_SENSORS, ULO_RATE_SENSORS)
+    )
+
+    descriptions.extend(configured)
+    descriptions.extend(_as_diagnostic(description) for description in alternate)
+    descriptions.extend(
+        _as_diagnostic(description) for description in ELECTRICITY_DIAGNOSTIC_SENSORS
+    )
 
     return descriptions
 

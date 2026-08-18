@@ -7,6 +7,7 @@ component) blocks real sockets, so a missed mock fails loudly.
 """
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -52,6 +53,20 @@ def mock_oeb(aioclient_mock):
         NATURAL_GAS_RATES_URL, text=load_rates_document("GasBillData.xml")
     )
     return aioclient_mock
+
+
+@pytest.fixture
+def enable_all_entities():
+    """Register the diagnostic entities that ship disabled by default.
+
+    Home Assistant core has an equivalent fixture; pytest-homeassistant-custom-
+    component does not re-export it.
+    """
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        property(lambda self: True),
+    ):
+        yield
 
 
 @pytest.fixture
