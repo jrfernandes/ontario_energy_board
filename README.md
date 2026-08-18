@@ -58,6 +58,10 @@ takes effect immediately.
 
 ## Cost tracking in the Energy dashboard
 
+**Next peak starts** is a timestamp, which Home Assistant shows as relative
+time — "in 2 hours". Together with **Next peak** and **Next peak rate** it lets
+an automation wait for cheaper power rather than poll for it.
+
 **Current all-in rate** is shaped so Home Assistant can use it as a price
 source. In **Settings → Dashboards → Energy**, edit your electricity
 consumption source, choose *Use an entity with current price*, and select it.
@@ -113,6 +117,10 @@ not.
 | Current rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
 | Current all-in rate | **yes** | `CAD/kWh` | `derived` |
 | Active peak | **yes** | `—` | `—` |
+| Next peak | **yes** | `—` | `—` |
+| Next peak starts | **yes** | `—` | `—` |
+| Next peak rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_*` |
+| Next peak all-in rate | **yes** | `CAD/kWh` | `derived` |
 | Season | **yes** | `—` | `—` |
 | Off-peak rate | **yes** | `CAD/kWh` | `RPPOffP` |
 | Mid-peak rate | **yes** | `CAD/kWh` | `RPPMidP` |

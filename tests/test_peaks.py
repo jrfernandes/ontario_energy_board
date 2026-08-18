@@ -5,7 +5,7 @@ timezone-aware datetime, so every case is a plain function call. All moments are
 built in America/Toronto, which is what the sensor localises to in production.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from holidays import country_holidays
@@ -26,6 +26,7 @@ from custom_components.ontario_energy_board.const import (
 from custom_components.ontario_energy_board.peaks import (
     active_peak,
     is_summer,
+    next_peak_change,
     tou_active_peak,
     ulo_active_peak,
 )
@@ -263,3 +264,107 @@ def test_real_ontario_holidays_are_recognised():
 
     # A plain working Monday must not be treated as a holiday.
     assert date(2024, 1, 15) not in ontario_holidays
+
+
+@pytest.mark.parametrize(
+    "moment, ulo_enabled, holidays, expected_at, expected_peak",
+    [
+        # Winter weekday: on-peak until the late morning.
+        (
+            at(date(2024, 1, 15), 8),
+            False,
+            [],
+            at(date(2024, 1, 15), 11),
+            STATE_MID_PEAK,
+        ),
+        # Friday evening runs off-peak across the whole weekend.
+        (
+            at(date(2024, 1, 12), 19),
+            False,
+            [],
+            at(date(2024, 1, 15), 7),
+            STATE_ON_PEAK,
+        ),
+        (at(date(2024, 1, 14), 12), False, [], at(date(2024, 1, 15), 7), STATE_ON_PEAK),
+        # ULO overnight ends at seven.
+        (
+            at(date(2024, 1, 15), 2),
+            True,
+            [],
+            at(date(2024, 1, 15), 7),
+            STATE_ULO_MID_PEAK,
+        ),
+        (
+            at(date(2024, 1, 15), 20),
+            True,
+            [],
+            at(date(2024, 1, 15), 21),
+            STATE_ULO_MID_PEAK,
+        ),
+    ],
+)
+def test_next_peak_change(moment, ulo_enabled, holidays, expected_at, expected_peak):
+    change = next_peak_change(
+        moment, holidays, energy_sector=SECTOR_ELECTRICITY, ulo_enabled=ulo_enabled
+    )
+
+    assert change == (expected_at, expected_peak)
+
+
+def test_next_peak_change_skips_a_holiday_weekend():
+    """Christmas 2024 falls on a Wednesday, so only that day is off-peak."""
+    change = next_peak_change(
+        at(CHRISTMAS, 12),
+        [CHRISTMAS],
+        energy_sector=SECTOR_ELECTRICITY,
+        ulo_enabled=False,
+    )
+
+    assert change == (at(date(2024, 12, 26), 7), STATE_ON_PEAK)
+
+
+def test_next_peak_change_crosses_daylight_saving_correctly():
+    """The clock skips an hour, so the wait is a day and six hours, not seven.
+
+    Adding to a zone-aware datetime directly would keep the old offset and
+    drift; this goes through UTC.
+    """
+    before_switch = at(date(2024, 3, 10), 1)
+
+    change = next_peak_change(
+        before_switch, [], energy_sector=SECTOR_ELECTRICITY, ulo_enabled=False
+    )
+
+    assert change is not None
+    when, peak = change
+
+    assert when == at(date(2024, 3, 11), 7)
+    assert peak == STATE_ON_PEAK
+    assert when.tzname() == "EDT"
+    assert before_switch.tzname() == "EST"
+    assert when - before_switch == timedelta(days=1, hours=6)
+
+
+def test_natural_gas_has_no_next_peak():
+    assert (
+        next_peak_change(
+            at(date(2024, 1, 15), 8),
+            [],
+            energy_sector=SECTOR_NATURAL_GAS,
+            ulo_enabled=False,
+        )
+        is None
+    )
+
+
+def test_next_peak_is_always_found_within_the_horizon():
+    """A long weekend is the worst case, and it must not fall off the end."""
+    for hour in range(24):
+        for day in (12, 13, 14, 15):
+            change = next_peak_change(
+                at(date(2024, 1, day), hour),
+                [date(2024, 1, 15)],
+                energy_sector=SECTOR_ELECTRICITY,
+                ulo_enabled=False,
+            )
+            assert change is not None, f"Jan {day} {hour}:00"
