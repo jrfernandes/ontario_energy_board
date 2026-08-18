@@ -89,18 +89,14 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         if user_input is not None:
             energy_company = user_input[CONF_ENERGY_COMPANY]
-            # Gas is never asked, but the value is still recorded so its unique
-            # id matches entries created before the sector was chosen first.
+            # Gas is never asked for a plan, but the value is still recorded:
+            # the coordinator reads it for every entry.
             ulo_enabled = user_input.get(CONF_ULO_ENABLED, False)
 
             # Entries carry no unique id: the company and the rate plan can
             # both change, so neither can identify an entry for its lifetime.
             # Duplicates are judged on what an entry currently holds instead.
-            if any(
-                entry.data[CONF_ENERGY_COMPANY] == energy_company
-                and effective_ulo_enabled(entry) == ulo_enabled
-                for entry in self._async_current_entries()
-            ):
+            if self._is_already_configured(energy_company, ulo_enabled):
                 return self.async_abort(reason="already_configured")
 
             return self.async_create_entry(
@@ -128,6 +124,24 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id=sector, data_schema=vol.Schema(schema))
 
+    def _is_already_configured(
+        self,
+        energy_company: str,
+        ulo_enabled: bool,
+        ignoring: config_entries.ConfigEntry | None = None,
+    ) -> bool:
+        """Whether another entry already covers this company and rate plan.
+
+        Entries carry no unique id, since the company and the rate plan can
+        both change, so this is judged on what each entry currently holds.
+        """
+        return any(
+            entry is not ignoring
+            and entry.data[CONF_ENERGY_COMPANY] == energy_company
+            and effective_ulo_enabled(entry) == ulo_enabled
+            for entry in self._async_current_entries()
+        )
+
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
@@ -142,12 +156,21 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = entry.data[CONF_ENERGY_COMPANY]
         sector = energy_sector_from_company_name(current)
 
+        errors: dict[str, str] = {}
+
         if user_input is not None:
-            return self.async_update_reload_and_abort(
-                entry,
-                title=user_input[CONF_ENERGY_COMPANY],
-                data_updates={CONF_ENERGY_COMPANY: user_input[CONF_ENERGY_COMPANY]},
-            )
+            chosen = user_input[CONF_ENERGY_COMPANY]
+
+            if self._is_already_configured(chosen, effective_ulo_enabled(entry), entry):
+                # Shown on the form rather than aborting, so the user keeps
+                # their place and can pick a different company.
+                errors["base"] = "already_configured"
+            else:
+                return self.async_update_reload_and_abort(
+                    entry,
+                    title=chosen,
+                    data_updates={CONF_ENERGY_COMPANY: chosen},
+                )
 
         try:
             companies = await get_energy_companies(
@@ -172,6 +195,7 @@ class OntarioEnergyBoardConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ): _company_selector(companies)
                 }
             ),
+            errors=errors,
             description_placeholders={"energy_company": current},
         )
 

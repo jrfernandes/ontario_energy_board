@@ -53,9 +53,6 @@ class OntarioEnergyBoardSensorEntityDescription(SensorEntityDescription):
     # Most values only change when the coordinator refreshes, once a day. Only
     # the few derived from the wall clock need the platform to poll them.
     clock_dependent: bool = False
-    # Reuses the config entry's own unique id, preserving an entity that
-    # predates the device layout.
-    use_entry_unique_id: bool = False
 
 
 def _active_peak(coordinator: OntarioEnergyBoardDataUpdateCoordinator) -> str:
@@ -216,7 +213,6 @@ CURRENT_RATE_ELECTRICITY = OntarioEnergyBoardSensorEntityDescription(
     suggested_display_precision=4,
     value_fn=_current_rate,
     clock_dependent=True,
-    use_entry_unique_id=True,
 )
 
 CURRENT_RATE_NATURAL_GAS = OntarioEnergyBoardSensorEntityDescription(
@@ -226,7 +222,6 @@ CURRENT_RATE_NATURAL_GAS = OntarioEnergyBoardSensorEntityDescription(
     state_class=SensorStateClass.MEASUREMENT,
     suggested_display_precision=6,
     value_fn=_current_rate,
-    use_entry_unique_id=True,
 )
 
 CURRENT_ALL_IN_RATE = OntarioEnergyBoardSensorEntityDescription(

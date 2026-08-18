@@ -226,3 +226,37 @@ async def test_migration_from_version_1_runs_both_steps(
     assert entry.unique_id is None
     assert entry.data[CONF_ULO_ENABLED] is False
     assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_removing_an_entry_clears_its_repair(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """Repairs are not tied to a config entry, so they must be cleared by hand.
+
+    Otherwise deleting an entry leaves a notice about a company the user no
+    longer has configured.
+    """
+    entry = build_config_entry("Utility That Left The Feed (RESIDENTIAL) [Electricity]")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    issue_id = f"company_missing_{entry.entry_id}"
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_the_document_is_downloaded_once_when_a_company_is_missing(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """The suggestion is parsed from the document already fetched."""
+    entry = build_config_entry("Utility That Left The Feed (RESIDENTIAL) [Electricity]")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert len(mock_oeb.mock_calls) == 1

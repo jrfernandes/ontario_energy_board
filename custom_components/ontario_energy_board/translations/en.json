@@ -6,9 +6,10 @@
             "reconfigure_successful": "The energy company was updated."
         },
         "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
+            "already_configured": "That company and rate plan are already set up on another entry.",
+            "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+            "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+            "unknown": "[%key:common::config_flow::error::unknown%]"
         },
         "step": {
             "electricity": {
