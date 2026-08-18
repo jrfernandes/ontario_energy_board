@@ -2,6 +2,7 @@
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ontario_energy_board.const import (
@@ -69,7 +70,7 @@ async def test_migration_from_version_1(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert entry.version == 2
+    assert entry.version == 3
     assert entry.data[CONF_ULO_ENABLED] is False
     assert entry.state is ConfigEntryState.LOADED
 
@@ -84,3 +85,89 @@ async def test_setup_retries_when_company_is_missing(
     await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_migration_re_keys_entities_without_losing_them(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """A version 2 entry's entities keep their entity ids, and their history.
+
+    Version 2 keyed everything on "<company> <plan>". Renaming a unique id in
+    the registry keeps the row, so the entity id the user already has in
+    dashboards and the recorder survives.
+    """
+    legacy_unique_id = f"{ELECTRICITY_COMPANY} False"
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=ELECTRICITY_COMPANY,
+        unique_id=legacy_unique_id,
+        version=2,
+        data={
+            CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY,
+            CONF_ULO_ENABLED: False,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    registry = er.async_get(hass)
+    # The single sensor that predates the device layout, plus one of the
+    # entities added alongside it.
+    rate = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        legacy_unique_id,
+        suggested_object_id="my_rate",
+        config_entry=entry,
+    )
+    peak = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{legacy_unique_id}_active_peak",
+        suggested_object_id="my_peak",
+        config_entry=entry,
+    )
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.version == 3
+    assert entry.unique_id is None
+
+    # Same rows, same entity ids.
+    assert registry.async_get(rate.entity_id).unique_id == (
+        f"{entry.entry_id}_current_rate"
+    )
+    assert registry.async_get(peak.entity_id).unique_id == (
+        f"{entry.entry_id}_active_peak"
+    )
+
+    # And they are live, not orphaned duplicates.
+    assert hass.states.get("sensor.my_rate") is not None
+    assert hass.states.get("sensor.my_peak") is not None
+    assert not [
+        e
+        for e in registry.entities.values()
+        if e.unique_id.startswith(legacy_unique_id)
+    ]
+
+
+async def test_migration_from_version_1_runs_both_steps(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """A version 1 entry gains the rate plan and then the new identity."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=ELECTRICITY_COMPANY,
+        unique_id=ELECTRICITY_COMPANY,
+        version=1,
+        data={CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY},
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.version == 3
+    assert entry.unique_id is None
+    assert entry.data[CONF_ULO_ENABLED] is False
+    assert entry.state is ConfigEntryState.LOADED
