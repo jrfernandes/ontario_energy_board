@@ -6,15 +6,13 @@
 [![OEB Coverage](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml/badge.svg)](https://github.com/jrfernandes/ontario_energy_board/actions/workflows/oeb_coverage.yml)
 
 
+> This is a community-maintained integration. It is not affiliated with,
+> endorsed by, or supported by the Ontario Energy Board; it reads their
+> published open data.
+
 This [Home Assistant](https://home-assistant.io/) component adds a device for your Ontario, Canada energy company (Electricity or Natural Gas), with sensors for the current rate, the active peak period, and the individual charges that make up your bill. Rates come from the Ontario Energy Board's official open data inventory. Find out more at https://www.oeb.ca/open-data
 
 The current rate sensor can drive cost tracking in Home Assistant's Energy dashboard, following the Time-of-Use or Ultra-Low Overnight schedule through the day.
-
-## Electricity
-![Electricity Sensor Preview](assets/electricity-sensor-preview.png)
-
-## Natural Gas
-![Natural Gas Sensor Preview](assets/natural-gas-sensor-preview.png)
 
 
 # Installation
@@ -38,6 +36,9 @@ also asks which rate plan you are on — standard Time-of-Use, or Ultra-Low
 Overnight. Natural gas has no peak periods, so there is nothing further to
 answer.
 
+You can change either afterwards without losing history: the rate plan from
+**Configure**, and the company from **Reconfigure**.
+
 [![AA](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start?domain=ontario_energy_board)
 
 
@@ -57,10 +58,32 @@ takes effect immediately.
 
 ## Cost tracking in the Energy dashboard
 
-`Current rate` is shaped so Home Assistant can use it as a price source. In
-**Settings → Dashboards → Energy**, edit your electricity or gas consumption
-source, choose *Use an entity with current price*, and select it. Costs then
-follow the peak schedule through the day rather than assuming a flat rate.
+**Current all-in rate** is shaped so Home Assistant can use it as a price
+source. In **Settings → Dashboards → Energy**, edit your electricity
+consumption source, choose *Use an entity with current price*, and select it.
+Costs then follow the peak schedule through the day.
+
+Use the all-in rate rather than **Current rate** here. Current rate is the
+commodity price the OEB publishes; delivery, regulatory charges, HST and the
+Ontario Electricity Rebate all land on top of it. Because the delivery charges
+are flat per kWh, they weigh far more on a cheap kWh than an expensive one:
+
+| Period | Current rate | All-in | |
+|:--|--:|--:|--:|
+| Off-peak | 9.80¢ | 12.08¢ | +23% |
+| Mid-peak | 15.70¢ | 17.56¢ | +12% |
+| On-peak | 20.30¢ | 21.84¢ | +8% |
+
+*Newmarket-Tay Power, residential. The uplift is not a fixed ratio, so it
+cannot be applied by scaling.*
+
+The all-in rate is the cost of the **next** kWh. Fixed monthly charges — the
+service charge and the standard supply service charge — are excluded, because
+they cannot be expressed per kWh without knowing how much you use. It will
+therefore always read below your bill divided by your consumption.
+
+The arithmetic is verified line by line against the OEB's own bill calculator;
+`tests/test_billing.py` holds that comparison.
 
 ## Changing your rate plan
 
@@ -69,33 +92,26 @@ open the integration's **Configure** button and change the rate plan there.
 Home Assistant cannot change your billing; this only tells it which rates
 apply. Natural gas has no rate plan, so there is nothing to configure.
 
-## Upgrading from 0.x
+## If your distributor is renamed
 
-Version 1.0.0 replaces the single sensor and its attributes with a device and
-individual entities.
+Ontario distributors are regularly renamed or merged into rate zones. When that
+happens the old name stops being published and the entry cannot update, so a
+repair notice appears explaining what to do.
 
-- **The state attributes are gone.** Anything using
-  `state_attr('sensor.…', 'off_peak_rate')` needs to move to the matching
-  entity. Some ship disabled; enable them from the device page.
-- **Your existing rate sensor survives.** It keeps its entity ID and its
-  history, and becomes `Current rate`. Its friendly name changes.
-- **`device_class: monetary` was removed** from it. That device class means
-  *an amount of money* and expects a total state class, which a price per kWh
-  is not. Rates now carry `state_class: measurement`, so they finally produce
-  long-term statistics.
-- **The natural gas unit changed** from `CA ¢/m³` to `CAD/m³`. The numbers were
-  always dollars, so the old label was wrong by a factor of 100. Home Assistant
-  may ask about the unit change on existing statistics.
-- **Entities now belong to a device**, so they are grouped under it rather than
-  appearing loose.
+Open the integration and choose **Reconfigure** to point it at the current
+name. The likely successor is pre-selected, but check it before saving: rate
+zones have similar names and genuinely different delivery charges. Doing this
+keeps your sensors and their history; deleting and re-adding the entry would
+not.
 
 ## Available entities
 
-#### Electricity
+### Electricity
 
 | Entity | On by default | Unit | OEB key |
 |:--|:--|:--|:--|
 | Current rate | **yes** | `CAD/kWh` | `RPPOnP / RPPMidP / RPPOffP / ULO_* / CM` |
+| Current all-in rate | **yes** | `CAD/kWh` | `derived` |
 | Active peak | **yes** | `—` | `—` |
 | Season | **yes** | `—` | `—` |
 | Off-peak rate | **yes** | `CAD/kWh` | `RPPOffP` |
@@ -128,7 +144,7 @@ individual entities.
 | Rate year | no | `—` | `YEAR` |
 | Distribution rate protection | no | `—` | `DRP` |
 
-#### Natural gas
+### Natural gas
 
 | Entity | On by default | Unit | OEB key |
 |:--|:--|:--|:--|
