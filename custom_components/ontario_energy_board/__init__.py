@@ -15,7 +15,7 @@ from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
 
 _LOGGER: Final = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:

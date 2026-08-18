@@ -21,6 +21,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "distribution_rate_protection": {
+        "name": "Distribution rate protection"
+      }
+    },
     "sensor": {
       "active_peak": {
         "name": "Active peak",
