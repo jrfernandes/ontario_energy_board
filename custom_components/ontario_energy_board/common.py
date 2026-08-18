@@ -5,6 +5,7 @@ take a document as a string and can be tested against the fixtures in
 ``tests/fixtures/`` without any network or Home Assistant involvement.
 """
 
+from difflib import get_close_matches
 import re
 
 import aiohttp
@@ -222,3 +223,16 @@ async def get_energy_company_data(
     content = await async_fetch_rates_document(session, sector)
 
     return parse_energy_company_data(sector, content, desired_company)
+
+
+def closest_company(missing: str, candidates: list[str]) -> str | None:
+    """The surviving name most like one that has left the feed.
+
+    Only ever a suggestion. Distributors merge into rate zones with nearly
+    identical names -- Alectra alone has five -- and they carry genuinely
+    different delivery charges, so choosing automatically would quietly bill
+    against another city's rates rather than fail.
+    """
+    matches = get_close_matches(missing, candidates, n=1, cutoff=0.6)
+
+    return matches[0] if matches else None

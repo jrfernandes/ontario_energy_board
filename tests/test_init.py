@@ -2,7 +2,7 @@
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import entity_registry as er, issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ontario_energy_board.const import (
@@ -75,16 +75,71 @@ async def test_migration_from_version_1(
     assert entry.state is ConfigEntryState.LOADED
 
 
-async def test_setup_retries_when_company_is_missing(
+async def test_a_vanished_company_is_a_permanent_error_not_a_retry(
     hass, mock_oeb, ontario_timezone, enable_custom_integrations
 ):
-    """A company that vanished from the OEB feed must not silently load."""
+    """Retrying cannot bring a renamed distributor back.
+
+    A network failure is worth retrying; a company that has left the document
+    is not, and saying so is what surfaces it to the user instead of leaving
+    the entry retrying quietly forever.
+    """
     entry = build_config_entry("Utility That Left The Feed (RESIDENTIAL) [Electricity]")
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+
+
+async def test_a_vanished_company_raises_a_repair(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    entry = build_config_entry("Utility That Left The Feed (RESIDENTIAL) [Electricity]")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, f"company_missing_{entry.entry_id}"
+    )
+
+    assert issue is not None
+    assert issue.severity is ir.IssueSeverity.ERROR
+
+
+async def test_the_repair_suggests_the_likely_new_name(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """A rename usually leaves most of the name intact."""
+    entry = build_config_entry(
+        "Alectra Utilities Corporation-For Brampton Main Rate Zone "
+        "(RESIDENTIAL) [Electricity]"
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, f"company_missing_{entry.entry_id}"
+    )
+
+    assert issue.translation_key == "company_suggestion"
+    assert issue.translation_placeholders["suggestion"] == ELECTRICITY_COMPANY
+
+
+async def test_the_repair_clears_once_the_company_resolves(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert (
+        ir.async_get(hass).async_get_issue(DOMAIN, f"company_missing_{entry.entry_id}")
+        is None
+    )
 
 
 async def test_migration_re_keys_entities_without_losing_them(
