@@ -142,11 +142,20 @@ def test_parse_company_data_returns_none_for_unknown_company(electricity_documen
     )
 
 
-async def test_get_energy_companies_covers_both_sectors(hass, mock_oeb):
-    companies = await get_energy_companies(async_get_clientsession(hass))
+@pytest.mark.parametrize(
+    "sector, expected, unexpected",
+    [
+        (SECTOR_ELECTRICITY, ELECTRICITY_COMPANY, NATURAL_GAS_COMPANY),
+        (SECTOR_NATURAL_GAS, NATURAL_GAS_COMPANY, ELECTRICITY_COMPANY),
+    ],
+)
+async def test_get_energy_companies_is_scoped_to_one_sector(
+    hass, mock_oeb, sector, expected, unexpected
+):
+    companies = await get_energy_companies(async_get_clientsession(hass), sector)
 
-    assert ELECTRICITY_COMPANY in companies
-    assert NATURAL_GAS_COMPANY in companies
+    assert expected in companies
+    assert unexpected not in companies
     assert companies == sorted(companies)
 
 

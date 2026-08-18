@@ -16,7 +16,6 @@ from .const import (
     ELECTRICITY_RATE_UNIT_OF_MEASURE,
     ELECTRICITY_RATES_URL,
     ELECTRICITY_XML_ROOT_ELEMENT,
-    ENERGY_SECTORS,
     NATURAL_GAS_CLASS_KEY,
     NATURAL_GAS_NAME_KEY,
     NATURAL_GAS_RATE_UNIT_OF_MEASURE,
@@ -192,21 +191,14 @@ def parse_energy_company_data(
     return None
 
 
-async def get_energy_companies(session: aiohttp.ClientSession) -> list[str]:
-    """Generates a sorted list of all energy companies available.
+async def get_energy_companies(
+    session: aiohttp.ClientSession, sector: str
+) -> list[str]:
+    """Sorted list of every company and rate class in one sector's document."""
 
-    In the XML document including the available classes.
-    """
+    content = await async_fetch_rates_document(session, sector)
 
-    all_companies = []
-
-    for sector in ENERGY_SECTORS:
-        content = await async_fetch_rates_document(session, sector)
-        all_companies.extend(parse_energy_companies(sector, content))
-
-    all_companies.sort()
-
-    return all_companies
+    return sorted(parse_energy_companies(sector, content))
 
 
 async def get_energy_company_data(
