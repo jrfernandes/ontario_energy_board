@@ -40,6 +40,54 @@
             "debt_retirement_charge": {
                 "name": "Debt retirement charge"
             },
+            "delivery_charge_price_adjustment": {
+                "name": "Delivery charge price adjustment"
+            },
+            "delivery_charge_tier_1": {
+                "name": "Delivery charge tier 1"
+            },
+            "delivery_charge_tier_2": {
+                "name": "Delivery charge tier 2"
+            },
+            "delivery_charge_tier_3": {
+                "name": "Delivery charge tier 3"
+            },
+            "delivery_charge_tier_4": {
+                "name": "Delivery charge tier 4"
+            },
+            "delivery_charge_tier_5": {
+                "name": "Delivery charge tier 5"
+            },
+            "delivery_tier_1_end": {
+                "name": "Delivery tier 1 end"
+            },
+            "delivery_tier_1_start": {
+                "name": "Delivery tier 1 start"
+            },
+            "delivery_tier_2_end": {
+                "name": "Delivery tier 2 end"
+            },
+            "delivery_tier_2_start": {
+                "name": "Delivery tier 2 start"
+            },
+            "delivery_tier_3_end": {
+                "name": "Delivery tier 3 end"
+            },
+            "delivery_tier_3_start": {
+                "name": "Delivery tier 3 start"
+            },
+            "delivery_tier_4_end": {
+                "name": "Delivery tier 4 end"
+            },
+            "delivery_tier_4_start": {
+                "name": "Delivery tier 4 start"
+            },
+            "delivery_tier_5_end": {
+                "name": "Delivery tier 5 end"
+            },
+            "delivery_tier_5_start": {
+                "name": "Delivery tier 5 start"
+            },
             "distribution_rate_protection_rate": {
                 "name": "Distribution rate protection rate"
             },
@@ -48,6 +96,18 @@
             },
             "distribution_volumetric_charge": {
                 "name": "Distribution volumetric charge"
+            },
+            "effective_date": {
+                "name": "Effective date"
+            },
+            "facility_carbon_charge": {
+                "name": "Facility carbon charge"
+            },
+            "federal_carbon_charge": {
+                "name": "Federal carbon charge"
+            },
+            "gas_supply_charge_price_adjustment": {
+                "name": "Gas supply charge price adjustment"
             },
             "global_adjustment": {
                 "name": "Global adjustment"
@@ -69,6 +129,9 @@
             },
             "mid_peak_rate": {
                 "name": "Mid-peak rate"
+            },
+            "monthly_charge": {
+                "name": "Monthly charge"
             },
             "monthly_fixed_charge": {
                 "name": "Monthly service charge"
@@ -104,6 +167,12 @@
             "standard_supply_service_charge": {
                 "name": "Standard supply service charge"
             },
+            "storage_charge": {
+                "name": "Storage charge"
+            },
+            "storage_charge_price_adjustment": {
+                "name": "Storage charge price adjustment"
+            },
             "tier_threshold": {
                 "name": "Tier threshold"
             },
@@ -112,6 +181,12 @@
             },
             "transmission_network_rate": {
                 "name": "Transmission network rate"
+            },
+            "transportation_charge": {
+                "name": "Transportation charge"
+            },
+            "transportation_charge_price_adjustment": {
+                "name": "Transportation charge price adjustment"
             },
             "ulo_mid_peak_rate": {
                 "name": "ULO mid-peak rate"
