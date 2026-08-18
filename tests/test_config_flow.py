@@ -371,3 +371,44 @@ async def test_reconfigure_stays_within_the_current_sector(
 
     assert NATURAL_GAS_COMPANY in values
     assert ELECTRICITY_COMPANY not in values
+
+
+async def test_reconfigure_refuses_a_company_another_entry_already_has(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """Re-pointing must not create the duplicate that adding would refuse."""
+    other = "Algoma Power Inc. (RESIDENTIAL R1) [Electricity]"
+
+    existing = build_config_entry(other, ulo_enabled=False)
+    existing.add_to_hass(hass)
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ENERGY_COMPANY: other}
+    )
+
+    # Reported on the form, so the user keeps their place.
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "already_configured"}
+    assert entry.data[CONF_ENERGY_COMPANY] == ELECTRICITY_COMPANY
+
+
+async def test_reconfigure_allows_keeping_the_same_company(
+    hass, mock_oeb, ontario_timezone, enable_custom_integrations
+):
+    """An entry is not a duplicate of itself."""
+    entry = build_config_entry(ELECTRICITY_COMPANY, ulo_enabled=False)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_ENERGY_COMPANY: ELECTRICITY_COMPANY}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"

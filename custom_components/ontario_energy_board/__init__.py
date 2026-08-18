@@ -8,11 +8,14 @@ from holidays import country_holidays
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import entity_registry as er, issue_registry as ir
 from homeassistant.setup import SetupPhases, async_pause_setup
 
 from .const import CONF_ULO_ENABLED, DOMAIN
-from .coordinator import OntarioEnergyBoardDataUpdateCoordinator
+from .coordinator import (
+    OntarioEnergyBoardDataUpdateCoordinator,
+    company_missing_issue_id,
+)
 
 _LOGGER: Final = logging.getLogger(__name__)
 
@@ -71,6 +74,15 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         _LOGGER.debug("Unloading of %s successful", config_entry.title)
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Clear any repair raised for an entry that is being removed.
+
+    Repairs are not tied to a config entry, so one raised for a company that
+    left the document would otherwise outlive the entry it refers to.
+    """
+    ir.async_delete_issue(hass, DOMAIN, company_missing_issue_id(config_entry.entry_id))
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
